@@ -1,0 +1,454 @@
+from collections import defaultdict
+import time
+import pickle
+from typing import NamedTuple
+from statistics import fmean
+import random
+import itertools
+
+import psycopg2
+import psycopg2.extensions
+import psycopg2.errors
+
+psql_version = ["9", "10", "11", "12", "13", "14"]
+
+TIMEOUT_REQUEST = 10
+
+def activate_extention(conn):
+    with conn.cursor() as cur:
+        cur.execute(f"""
+        CREATE EXTENSION IF NOT EXISTS "tablefunc";
+        ALTER ROLE odoo SET statement_timeout = '{TIMEOUT_REQUEST}s';
+        """)
+    conn.commit()
+
+def create_many_2_many(cur, table1, table2):
+    cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{table1}_{table2}_rel" (
+            "{table1}_id" INTEGER NOT NULL REFERENCES {table1}(id) ON DELETE CASCADE,
+            "{table2}_id" INTEGER NOT NULL REFERENCES {table2}(id) ON DELETE CASCADE,
+            PRIMARY KEY("{table1}_id", "{table2}_id")
+        );
+        CREATE INDEX ON "{table1}_{table2}_rel" ("{table2}_id", "{table1}_id");
+    """)
+    return f"{table1}_{table2}_rel"
+
+def create_many_2_many_without_contraint(cur, table1, table2):
+    cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS "{table1}_{table2}_rel" (
+            "{table1}_id" INTEGER NOT NULL,
+            "{table2}_id" INTEGER NOT NULL,
+            PRIMARY KEY("{table1}_id", "{table2}_id")
+        );
+    """)
+    return f"{table1}_{table2}_rel"
+
+def create_many_2_many_contraint(cur, table1, table2, drop=False):
+    if drop:
+        cur.execute(f"""
+        ALTER TABLE "{table1}_{table2}_rel" DROP CONSTRAINT IF EXISTS fk_{table1}_{table2}_rel_{table1}_id;
+        ALTER TABLE "{table1}_{table2}_rel" DROP CONSTRAINT IF EXISTS fk_{table1}_{table2}_rel_{table2}_id;
+        DROP INDEX IF EXISTS {table1}_{table2}_rel_inverse;
+        """)
+        return
+    cur.execute(f"""
+        ALTER TABLE "{table1}_{table2}_rel" ADD CONSTRAINT fk_{table1}_{table2}_rel_{table1}_id
+            FOREIGN KEY ({table1}_id) REFERENCES {table1} (id) ON DELETE CASCADE;
+        ALTER TABLE "{table1}_{table2}_rel" ADD CONSTRAINT fk_{table1}_{table2}_rel_{table2}_id
+            FOREIGN KEY ({table2}_id) REFERENCES {table2} (id) ON DELETE CASCADE;
+        CREATE INDEX {table1}_{table2}_rel_inverse ON "{table1}_{table2}_rel" ("{table2}_id", "{table1}_id");
+    """)
+
+def create_many_2_many_contraint_v_13(cur, table1, table2, drop=False):
+    if drop:
+        cur.execute(f"""
+        ALTER TABLE "{table1}_{table2}_rel" DROP CONSTRAINT IF EXISTS fk_{table1}_{table2}_rel_{table1}_id;
+        ALTER TABLE "{table1}_{table2}_rel" DROP CONSTRAINT IF EXISTS fk_{table1}_{table2}_rel_{table2}_id;
+        DROP INDEX IF EXISTS {table1}_{table2}_rel_a;
+        DROP INDEX IF EXISTS {table1}_{table2}_rel_b;
+        """)
+        return
+    cur.execute(f"""
+        ALTER TABLE "{table1}_{table2}_rel" ADD CONSTRAINT fk_{table1}_{table2}_rel_{table1}_id
+            FOREIGN KEY ({table1}_id) REFERENCES {table1} (id) ON DELETE CASCADE;
+        ALTER TABLE "{table1}_{table2}_rel" ADD CONSTRAINT fk_{table1}_{table2}_rel_{table2}_id
+            FOREIGN KEY ({table2}_id) REFERENCES {table2} (id) ON DELETE CASCADE;
+        CREATE INDEX {table1}_{table2}_rel_a ON "{table1}_{table2}_rel" ("{table1}_id");
+        CREATE INDEX {table1}_{table2}_rel_b ON "{table1}_{table2}_rel" ("{table2}_id");
+    """)
+
+def create_tables(conn):
+    with conn.cursor() as cur:
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS model_a (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            create_uid INTEGER,
+            create_date timestamp without time zone,
+            write_uid INTEGER,
+            write_date timestamp without time zone
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS model_b (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            create_uid INTEGER,
+            create_date timestamp without time zone,
+            write_uid INTEGER,
+            write_date timestamp without time zone
+        )
+        """)
+
+        rel = create_many_2_many_without_contraint(cur, "model_a", "model_b")
+    conn.commit()
+    return "model_a", "model_b", rel
+
+def clean_tables(conn):
+    with conn.cursor() as cur:
+        cur.execute("""
+        TRUNCATE TABLE model_a CASCADE;
+        ALTER SEQUENCE model_a_id_seq RESTART;
+        TRUNCATE TABLE model_b CASCADE;
+        ALTER SEQUENCE model_b_id_seq RESTART;
+        """)
+        create_many_2_many_contraint(cur, "model_a", "model_b", drop=True)
+
+def analyse_table(conn):
+    with conn.cursor() as cur:
+        cur.execute("""
+        ANALYZE model_a;
+        ANALYZE model_b;
+        ANALYZE model_a_model_b_rel;
+        """)
+
+def create_row_normal(conn, table, nb):
+    with conn.cursor() as cur:
+        cur.execute(f"""
+        INSERT INTO {table} (name, create_uid, create_date, write_uid, write_date)
+        SELECT
+            'bla' || s::char,
+            s % 10,
+            now(),
+            (s+1) % 10,
+            now()
+        FROM generate_series(1, {nb}) AS s
+        """)
+    conn.commit()
+
+def create_many2many_row(conn, nb, concentration, size_t1, size_t2):
+    split_val = 500_000
+    done = 0
+    while done < nb:
+        s = time.time()
+        todo = min((nb - done), split_val)
+        done += todo
+        with conn.cursor() as cur:
+            if concentration is None:
+                cur.execute(f"""
+                INSERT INTO model_a_model_b_rel (model_a_id, model_b_id)
+                SELECT ceil(random() * {size_t1 - 1}) + 1, ceil(random() * {size_t2 - 1}) + 1
+                FROM generate_series(1, {todo}) as s
+                ON CONFLICT DO NOTHING
+                """)
+            else:
+                conc_normal_t1 = int(concentration * size_t1 / 100)
+                conc_normal_t2 = int(concentration * size_t2 / 100)
+                cur.execute(f"""
+                INSERT INTO model_a_model_b_rel (model_a_id, model_b_id)
+                SELECT t1, t2
+                FROM UNNEST(
+                    ARRAY(
+                        SELECT array_agg(mod(abs(a)::integer, {size_t1 - 1}) + 1) FROM normal_rand({todo}, 0, {conc_normal_t1}) AS a
+                    ), ARRAY(
+                        SELECT array_agg(mod(abs(a)::integer, {size_t2 - 1}) + 1) FROM normal_rand({todo}, 0, {conc_normal_t2}) AS a
+                    )) AS t(t1, t2)
+                ON CONFLICT DO NOTHING
+                """)
+        conn.commit()
+        # analyse_table(conn)
+        print(f"{done}/{nb} ({time.time() - s} sec)")
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM model_a_model_b_rel")
+        res, = cur.fetchone()
+    return res
+
+def launch_test():
+
+    def test_in_select_null(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE
+        model_a.id IN (
+            SELECT model_a_id FROM model_a_model_b_rel WHERE model_a_id IS NOT NULL
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    def test_in_select(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE
+        model_a.id IN (
+            SELECT model_a_id FROM model_a_model_b_rel
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    def test_exists(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE EXISTS (
+            SELECT 1 FROM model_a_model_b_rel WHERE model_a_id = model_a.id
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    def test_not_in_select_null(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE
+        model_a.id NOT IN (
+            SELECT model_a_id FROM model_a_model_b_rel WHERE model_a_id IS NOT NULL
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    def test_not_in_select(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE
+        model_a.id NOT IN (
+            SELECT model_a_id FROM model_a_model_b_rel
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    def test_not_exists(limit=None, order=None):
+        return f"""
+        SELECT id FROM model_a WHERE NOT EXISTS (
+            SELECT 1 FROM model_a_model_b_rel WHERE model_a_id = model_a.id
+        )
+        {'' if not order else 'ORDER BY ' + str(order)}
+        {'' if not limit else 'LIMIT ' + str(limit)}"""
+
+    query_methods = [
+        test_in_select_null,
+        test_in_select,
+        test_exists,
+        test_not_in_select_null,
+        test_not_in_select,
+        test_not_exists
+    ]
+    limit_to_test = [
+        1,
+        80,
+        1000,
+        # None
+    ]
+    order_to_test = [
+        "id DESC",
+        "id",
+        # None
+    ]
+
+    possibilities = list(itertools.product(limit_to_test, order_to_test, query_methods))
+
+    res_time = defaultdict(list)
+    res_explain = defaultdict(lambda: "TIMEOUT")
+    res_res = {}
+
+    print("\n - Get explain + result")
+    pass_method = set()
+    for limit, order, query_me in possibilities:
+        key = (query_me.__name__, limit, order)
+        try:
+            with psycopg2.connect("dbname=master") as conn:
+                with conn.cursor() as cur:
+                    query = query_me(limit, order)
+
+                    cur.execute("EXPLAIN " + query)
+                    text = "\n".join(s for s, in cur.fetchall())
+                    res_explain[key] = text
+
+                    cur.execute(query)
+                    res_res[key] = [str(s) for s, in cur.fetchall()]
+                    # print(key)
+                    # print(text)
+        except psycopg2.errors.OperationalError as e:
+            if "timeout" in str(e):
+                pass_method.add(key)
+            else:
+                raise
+
+    print("\n - Test time")
+    for _ in range(5):
+        for limit, order, query_me in random.sample(possibilities, len(possibilities)):
+            key = (query_me.__name__, limit, order)
+            if key in pass_method:
+                continue
+            try:
+                with psycopg2.connect("dbname=master") as conn:
+                    with conn.cursor() as cur:
+                        query = query_me(limit, order)
+                        s = time.time()
+                        cur.execute(query)
+                        end = time.time() - s
+                        res_time[key].append(end)
+            except psycopg2.errors.OperationalError as e:
+                if "timeout" in str(e):
+                    pass
+                else:
+                    raise
+
+    # Check that result
+    print("\n - Check res_res and explain:")
+    for limit, order in itertools.product(limit_to_test, order_to_test):
+        key0 = ("test_in_select_null", limit, order)
+        key1 = ("test_in_select", limit, order)
+        key2 = ("test_exists", limit, order)
+        if key0 in res_res and key1 in res_res and key2 in res_res and order is not None:
+            assert res_res[key0] == res_res[key1] == res_res[key2], f"Same result \n{res_res[key0]}\n{res_res[key1]}\n{res_res[key2]}"
+        if res_explain[key2] != res_explain[key1]:
+            print()
+            print(key1, "vs", key2)
+            print(res_explain[key1])
+            print(res_explain[key2])
+
+    print("\n - Print RESULT:")
+    for limit, order, meth in possibilities:
+        key = (meth.__name__, limit, order)
+        values = res_time[key]
+        if not values:
+            # print(key, "TIMEOUT 10 sec for each")
+            continue
+        # print(key, f"took {fmean(values)} sec in average, the best: {min(values)} sec, the worst: {max(values)} sec ")
+    print()
+
+    return dict(res_time), dict(res_explain)
+
+
+TestCase = NamedTuple('TestCase', [
+    ('name', str),
+    ('size_t1', int),
+    ('size_t2', int),
+    ('size_rel', int),
+    ('concentration', float),  # 0 > c > inf, lower means firsts record will have more link that other
+])
+
+size_table = {
+    # 'Very small': 100,
+    'Small': 2_000,
+    # 'Normal': 50_000,
+    'Big': 1_000_000,
+    # 'Very_big': 10_000_000,
+}
+
+size_rel_factor = {
+    'Almost not connected': 1 / 5,
+    # 'Few connection': 1,
+    'Connected': 5,
+    # 'Highly connected': 20,
+}
+
+concentration = {
+    'None': None,
+    # 'Few': 50,
+    'A Lot': 10,
+    # 'Very highly Concentrate': 2,
+}
+
+TESTS: list[TestCase] = []
+for st_str_t1, st_size_t1 in size_table.items():
+    for st_str_t2, st_size_t2 in size_table.items():
+        for srf_str, srf in size_rel_factor.items():
+            for conc_str, conc in concentration.items():
+                name = (f"T1: {st_str_t1}, T2: {st_str_t2}, Rel factor: {srf_str} with concentration {conc_str}")
+                TESTS.append(TestCase(name, st_size_t1, st_size_t2, int(srf * (st_size_t1 + st_size_t2)), conc))
+
+def launch_tests(file_to_save):
+    # prepare_db
+    with psycopg2.connect("dbname=master") as conn:
+        activate_extention(conn)
+        create_tables(conn)
+        conn.commit()
+
+    all_result = {}
+
+    for test in TESTS:
+        s = time.time()
+        print("--------" * 5)
+        print("Begin Test", test, "\n")
+        with psycopg2.connect("dbname=master") as conn:
+            clean_tables(conn)
+            conn.commit()
+
+            create_row_normal(conn, "model_a", test.size_t1)
+            create_row_normal(conn, "model_b", test.size_t2)
+            analyse_table(conn)
+            conn.commit()
+
+            res = create_many2many_row(conn, test.size_rel, test.concentration, test.size_t1, test.size_t2)
+            print(res, " rel has been created")
+
+            with conn.cursor() as cur:
+                create_many_2_many_contraint(cur, "model_a", "model_b")
+
+            analyse_table(conn)
+            conn.commit()
+
+        all_result[test] = launch_test()
+
+        print(f"One test finished in {time.time() - s} sec")
+
+    with open(file_to_save, 'wb') as f:
+        pickle.dump(all_result, f)
+
+def interpreted_result(file):
+
+    def get_fmean_3_best(values):
+        if len(values) > 2:
+            return fmean(sorted(values)[:3])
+        else:
+            return TIMEOUT_REQUEST
+
+    by_methods = defaultdict(list)
+
+    with open(file, 'rb') as f:
+        all_result = pickle.load(f)
+        for test in all_result:
+            res_time, res_explain = all_result[test]
+            limits = set()
+            orders = set()
+            for key, values in res_time.items():
+                meth_name, limit, order = key
+                limits.add(limit)
+                orders.add(order)
+                by_methods[meth_name].extend(values)
+
+            for limit, order in itertools.product(limits, orders):
+                # Print when the exist is slower than the actual query
+                # test_in_select_null < test_exists
+                current_key = ('test_in_select_null', limit, order)
+                exists_key = ('test_exists', limit, order)
+                mean_current = get_fmean_3_best(res_time[current_key])
+                mean_exists = get_fmean_3_best(res_time[exists_key])
+                if mean_current < mean_exists:
+                    pass
+                    print(f"For {test}, {current_key} < {exists_key} :\n{mean_current} < {mean_exists} sec")
+
+                # test_not_in_select_null < test_not_exists
+                not_current_key = ('test_not_in_select_null', limit, order)
+                not_exists_key = ('test_not_exists', limit, order)
+                not_mean_current = get_fmean_3_best(res_time[not_current_key])
+                not_mean_exists = get_fmean_3_best(res_time[not_exists_key])
+                if not_mean_current < not_mean_exists:
+                    pass
+                    # print(f"For {test}, {not_current_key} < {not_exists_key} :\n{not_mean_current} < {not_mean_exists} sec")
+
+    # by_methods[]
+    for key, values in by_methods.items():
+        print(key, fmean(values), " sec")
+
+file = 'all_result.obj'
+
+print(len(TESTS))
+# launch_tests(file)
+interpreted_result(file)
