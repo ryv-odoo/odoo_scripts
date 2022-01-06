@@ -2,7 +2,7 @@ from collections import defaultdict
 import time
 import pickle
 from typing import NamedTuple
-from statistics import fmean
+from statistics import NormalDist, fmean, pstdev
 import random
 import itertools
 
@@ -10,7 +10,7 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.errors
 
-from misc import unique
+from misc import RED, RESET, unique
 
 psql_version = ["9", "10", "11", "12", "13", "14"]
 
@@ -129,18 +129,25 @@ def analyse_table(conn):
         """)
 
 def create_row_normal(conn, table, nb):
-    with conn.cursor() as cur:
-        cur.execute(f"""
-        INSERT INTO {table} (name, create_uid, create_date, write_uid, write_date)
-        SELECT
-            'bla' || s::char,
-            s % 10,
-            now(),
-            (s+1) % 10,
-            now()
-        FROM generate_series(1, {nb}) AS s
-        """)
-    conn.commit()
+    split_val = 500_000
+    done = 0
+    while done < nb:
+        s = time.time()
+        todo = min((nb - done), split_val)
+        done += todo
+        with conn.cursor() as cur:
+            cur.execute(f"""
+            INSERT INTO {table} (name, create_uid, create_date, write_uid, write_date)
+            SELECT
+                'bla' || s::char,
+                s % 10,
+                now(),
+                (s+1) % 10,
+                now()
+            FROM generate_series(1, {nb}) AS s
+            """)
+        conn.commit()
+        print(f"create row of {table}, {done} / {nb} ({time.time() - s} sec)")
 
 def create_many2many_row(conn, nb, concentration, size_t1, size_t2):
     split_val = 500_000
@@ -172,7 +179,7 @@ def create_many2many_row(conn, nb, concentration, size_t1, size_t2):
                 ON CONFLICT DO NOTHING
                 """)
         conn.commit()
-        print(f"{done}/{nb} ({time.time() - s} sec)")
+        print(f"rel creation: {done} / {nb} ({time.time() - s} sec)")
 
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM model_a_model_b_rel")
@@ -235,17 +242,17 @@ def launch_test():
 
     query_methods = [
         test_in_select_null,
-        test_in_select,
+        # test_in_select,
         test_exists,
         test_not_in_select_null,
-        test_not_in_select,
-        test_not_exists
+        # test_not_in_select,
+        test_not_exists,
     ]
     limit_to_test = [
         1,
         80,
-        1000,
-        # None
+        # 1000,
+        None
     ]
     order_to_test = [
         "id DESC",
@@ -282,7 +289,7 @@ def launch_test():
             else:
                 raise
 
-    print(f"- Test time ({len(pass_method)} methods timeout)")
+    print(f"- Test time ({len(pass_method)} methods timeout : {pass_method})")
     for _ in range(10):
         for limit, order, query_me in random.sample(possibilities, len(possibilities)):
             key = (query_me.__name__, limit, order)
@@ -303,18 +310,18 @@ def launch_test():
                     raise
 
     # Check that result
-    print("- Check res_res and explain:")
-    for limit, order in itertools.product(limit_to_test, order_to_test):
-        key0 = ("test_in_select_null", limit, order)
-        key1 = ("test_in_select", limit, order)
-        key2 = ("test_exists", limit, order)
-        if key0 in res_res and key1 in res_res and key2 in res_res and order is not None:
-            assert res_res[key0] == res_res[key1] == res_res[key2], f"Same result \n{res_res[key0]}\n{res_res[key1]}\n{res_res[key2]}"
-        if res_explain[key2] != res_explain[key1]:
-            print()
-            print(key1, "vs", key2)
-            print(res_explain[key1])
-            print(res_explain[key2])
+    # print("- Check res_res and explain:")
+    # for limit, order in itertools.product(limit_to_test, order_to_test):
+    #     key0 = ("test_in_select_null", limit, order)
+    #     key1 = ("test_in_select", limit, order)
+    #     key2 = ("test_exists", limit, order)
+    #     if key0 in res_res and key1 in res_res and key2 in res_res and order is not None:
+    #         assert res_res[key0] == res_res[key1] == res_res[key2], f"Same result \n{res_res[key0]}\n{res_res[key1]}\n{res_res[key2]}"
+    #     if res_explain[key2] != res_explain[key1]:
+    #         print()
+    #         print(key1, "vs", key2)
+    #         print(res_explain[key1])
+    #         print(res_explain[key2])
 
     # print("- Print RESULT:")
     # for limit, order, meth in possibilities:
@@ -338,30 +345,30 @@ TestCase = NamedTuple('TestCase', [
 ])
 
 size_table_t1 = {
-    # 'Very small': 100,
+    'Very small': 100,
     'Small': 2_000,
-    # 'Normal': 50_000,
-    'Big': 1_000_000,
+    'Normal': 50_000,
+    # 'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 
 size_table_t2 = {
-    # 'Very small': 100,
-    # 'Small': 2_000,
+    'Very small': 100,
+    'Small': 2_000,
     'Normal': 50_000,
     # 'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 
 size_rel_factor = {
-    'Almost not connected': 1 / 5,
-    # 'Few connection': 1,
+    # 'Almost not connected': 1 / 5,
+    'Few connection': 1,
     'Connected': 5,
     # 'Highly connected': 20,
 }
 
 concentration = {
-    'None': None,
+    # 'None': None,
     # 'Few': 50,
     'A Lot': 10,
     # 'Very highly Concentrate': 2,
@@ -381,9 +388,19 @@ def launch_tests(file_to_save):
         activate_extention(conn)
         create_tables(conn)
 
+    all_ready = {}
+    try:
+        with open(file_to_save, 'rb') as f:
+            all_ready = pickle.load(f)
+    except FileNotFoundError:
+        pass
+
+    tests = [t for t in TESTS if t not in all_ready]
+
+    print("Test already done : " + str(len(TESTS) - len(tests)) + " skip")
     all_result = {}
 
-    for test in TESTS:
+    for test in tests:
         s = time.time()
         print("--------" * 5)
         print("Begin Test", test, "\n")
@@ -408,22 +425,66 @@ def launch_tests(file_to_save):
         print(f"One test finished in {time.time() - s} sec")
 
     with open(file_to_save, 'wb') as f:
-        pickle.dump(all_result, f)
+        pickle.dump({**all_ready, **all_result}, f)
 
 def interpreted_result(file):
 
-    def get_fmean_3_best(values):
-        if len(values) > 2:
-            return fmean(sorted(values)[:3])
+    X_BEST = 7
+    TIMEOUT_REQUEST_SIGMA = 0.000000000001
+
+    def x_bests(values):
+        return sorted(values)[:X_BEST]
+
+    def means_std(values):
+        values = x_bests(values)
+        if len(values) < 2:
+            return TIMEOUT_REQUEST, TIMEOUT_REQUEST_SIGMA
         else:
-            return TIMEOUT_REQUEST
+            return fmean(values), pstdev(values) * 2
+
+    def statically_faster(values_1, values_2):
+        """ Return true if values_1 is statically
+        less (faster) than values_2
+        """
+        if len(values_1) > 1:
+            values_1 = x_bests(values_1)
+        else:
+            values_1 = [TIMEOUT_REQUEST, TIMEOUT_REQUEST + TIMEOUT_REQUEST_SIGMA]
+        if len(values_2) > 1:
+            values_2 = x_bests(values_2)
+        else:
+            values_2 = [TIMEOUT_REQUEST, TIMEOUT_REQUEST + TIMEOUT_REQUEST_SIGMA]
+        n1 = NormalDist.from_samples(values_1)
+        n2 = NormalDist.from_samples(values_2)
+        p = n1.overlap(n2)
+        return p < 0.01 and fmean(values_1) < fmean(values_2)
 
     by_methods = defaultdict(list)
+
+    faster_dict = defaultdict(list)
 
     with open(file, 'rb') as f:
         all_result = pickle.load(f)
         for test in all_result:
             res_time, res_explain = all_result[test]
+            def compare_two_test(key1, key2):
+                if key1 not in res_time and key2 not in res_time:
+                    print("TIMEOUT EACH ", test, key1, key2)
+                if key1 not in res_time:
+                    res_time[key1] = []
+                if key2 not in res_time:
+                    res_time[key2] = []
+                if statically_faster(res_time[key1], res_time[key2]):
+                    mean1, std1 = means_std(res_time[key1])
+                    mean2, std2 = means_std(res_time[key2])
+                    # print(f"For {test}, {key1} < {key2} :\n{means_std(res_time[key1])} < {means_std(res_time[key2])} sec")
+                    faster_dict[(key1, key2)].append((test, f"{mean1:2.6f} +- {std1:2.6f} < {mean2:2.6f} +- {std2:2.6f} sec(*{RED} {((mean2 / mean1 * 100)):7.3f} {RESET}%)"))
+                elif statically_faster(res_time[key2], res_time[key1]):
+                    mean1, std1 = means_std(res_time[key1])
+                    mean2, std2 = means_std(res_time[key2])
+                    # print(f"For {test}, {key2} < {key1} :\n{means_std(res_time[key2])} < {means_std(res_time[key1])} sec")
+                    faster_dict[(key2, key1)].append((test, f"{mean2:2.6f} +- {std2:2.6f} < {mean1:2.6f} +- {std1:2.6f} sec (*{RED} {((mean1 / mean2 * 100)):7.3f} {RESET}%)"))
+
             limits = list(unique(key[1] for key in res_time))
             orders = list(unique(key[2] for key in res_time))
             for key, values in res_time.items():
@@ -435,18 +496,22 @@ def interpreted_result(file):
                 # test_in_select_null < test_exists
                 current_key = ('test_in_select_null', limit, order)
                 exists_key = ('test_exists', limit, order)
-                mean_current = get_fmean_3_best(res_time[current_key])
-                mean_exists = get_fmean_3_best(res_time[exists_key])
-                if mean_current < mean_exists:
-                    print(f"For {test}, {current_key} < {exists_key} :\n{mean_current} < {mean_exists} sec")
+                compare_two_test(current_key, exists_key)
 
                 # test_not_in_select_null < test_not_exists
                 not_current_key = ('test_not_in_select_null', limit, order)
                 not_exists_key = ('test_not_exists', limit, order)
-                not_mean_current = get_fmean_3_best(res_time[not_current_key])
-                not_mean_exists = get_fmean_3_best(res_time[not_exists_key])
-                if not_mean_current < not_mean_exists:
-                    print(f"For {test}, {not_current_key} < {not_exists_key} :\n{not_mean_current} < {not_mean_exists} sec")
+                compare_two_test(not_current_key, not_exists_key)
+
+                if means_std(res_time[not_exists_key])[0] > 0.35:
+                    print(test, not_exists_key, means_std(res_time[not_exists_key]))
+                    print(res_explain[not_exists_key])
+
+        print("--" * 100)
+        for key, values in faster_dict.items():
+            print(key, len(values), ":")
+            print("\n".join(str(v[0]) + " \n-> " + v[1] for v in values))
+            print()
 
     for key, values in by_methods.items():
         print(key, fmean(values), " sec")
@@ -455,4 +520,4 @@ file = 'all_result.obj'
 
 print(len(TESTS))
 launch_tests(file)
-# interpreted_result(file)
+interpreted_result(file)
