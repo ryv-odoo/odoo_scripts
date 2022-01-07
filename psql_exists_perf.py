@@ -147,8 +147,8 @@ def create_many_2_many_contraint_v_13(cur, drop=False):
 
 def create_tables(conn):
     with conn.cursor() as cur:
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS model_a (
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {TABLE_1} (
             id SERIAL PRIMARY KEY,
             name TEXT,
             create_uid INTEGER,
@@ -158,8 +158,8 @@ def create_tables(conn):
         )
         """)
 
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS model_b (
+        cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {TABLE_2} (
             id SERIAL PRIMARY KEY,
             name TEXT,
             create_uid INTEGER,
@@ -175,11 +175,12 @@ def create_tables(conn):
 
 def clean_tables(conn):
     with conn.cursor() as cur:
-        cur.execute("""
-        TRUNCATE TABLE model_a CASCADE;
-        ALTER SEQUENCE model_a_id_seq RESTART;
-        TRUNCATE TABLE model_b CASCADE;
-        ALTER SEQUENCE model_b_id_seq RESTART;
+        cur.execute(f"""
+        TRUNCATE TABLE {TABLE_1} CASCADE;
+        ALTER SEQUENCE {TABLE_1}_id_seq RESTART;
+        TRUNCATE TABLE {TABLE_2} CASCADE;
+        ALTER SEQUENCE {TABLE_2}_id_seq RESTART;
+        TRUNCATE TABLE {TABLE_MANY_2_MANY} CASCADE;
         """)
         if ODOO_V13:
             create_many_2_many_contraint_v_13(cur, drop=True)
@@ -195,7 +196,7 @@ def analyse_table():
             cur.execute("VACUUM ANALYZE model_a_model_b_rel")
 
 def create_row_normal(conn, table, nb):
-    split_val = 100_000
+    split_val = 500_000
     done = 0
     while done < nb:
         s = time.time()
@@ -216,7 +217,7 @@ def create_row_normal(conn, table, nb):
         print(f"create row of {table}, {done} / {nb} ({time.time() - s} sec)")
 
 def create_many2many_row(conn, nb, concentration, size_t1, size_t2):
-    split_val = 100_000
+    split_val = 500_000
     done = 0
     while done < nb:
         s = time.time()
@@ -400,7 +401,6 @@ def launch_tests(file_to_save):
     # prepare_db
     with psycopg2.connect(CONNECTION_PARAMS) as conn:
         activate_extention(conn)
-        activate_timeout(conn, TIMEOUT_REQUEST)
         create_tables(conn)
 
     all_ready = {}
@@ -416,10 +416,13 @@ def launch_tests(file_to_save):
     print(f"{str(len(TESTS) - len(tests))} tests skip (already done)")
 
     all_result = {}
-    for test in tests:
+    for i, test in enumerate(tests):
         start_time = time.time()
         print("--------" * 5)
         print("Begin Test", test, "\n")
+        with psycopg2.connect(CONNECTION_PARAMS) as conn:
+            activate_timeout(conn, TIMEOUT_REQUEST * 20)
+
         with psycopg2.connect(CONNECTION_PARAMS) as conn:
             clean_tables(conn)
             conn.commit()
@@ -437,10 +440,12 @@ def launch_tests(file_to_save):
                     create_many_2_many_contraint(cur)
             conn.commit()
         analyse_table()
+        with psycopg2.connect(CONNECTION_PARAMS) as conn:
+            activate_timeout(conn, TIMEOUT_REQUEST)
 
         res_time, res_explain = launch_test()
         all_result[test] = (res_time, res_explain, rel_size)
-        print(f"One test finished in {time.time() - start_time} sec")
+        print(f"-> Test ({i}/{len(tests)}) finished in {time.time() - start_time} sec")
 
     with open(file_to_save, 'wb') as f:
         print(f"Save result in {RESULT_FILE}")
