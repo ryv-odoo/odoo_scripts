@@ -80,7 +80,13 @@ def activate_extention(conn):
     with conn.cursor() as cur:
         cur.execute(f"""
         CREATE EXTENSION IF NOT EXISTS "tablefunc";
-        ALTER ROLE odoo SET statement_timeout = '{TIMEOUT_REQUEST}s';
+        """)
+    conn.commit()
+
+def activate_timeout(conn, timeout):
+    with conn.cursor() as cur:
+        cur.execute(f"""
+        ALTER ROLE odoo SET statement_timeout = '{timeout}s';
         """)
     conn.commit()
 
@@ -180,16 +186,16 @@ def clean_tables(conn):
         else:
             create_many_2_many_contraint(cur, drop=True)
 
-def analyse_table(conn):
-    with conn.cursor() as cur:
-        cur.execute("""
-        ANALYZE model_a;
-        ANALYZE model_b;
-        ANALYZE model_a_model_b_rel;
-        """)
+def analyse_table():
+    with psycopg2.connect(CONNECTION_PARAMS) as conn:
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # Vaccum need to be done outside transaction block
+        with conn.cursor() as cur:
+            cur.execute("VACUUM ANALYZE model_a")
+            cur.execute("VACUUM ANALYZE model_b")
+            cur.execute("VACUUM ANALYZE model_a_model_b_rel")
 
 def create_row_normal(conn, table, nb):
-    split_val = 500_000
+    split_val = 100_000
     done = 0
     while done < nb:
         s = time.time()
@@ -210,7 +216,7 @@ def create_row_normal(conn, table, nb):
         print(f"create row of {table}, {done} / {nb} ({time.time() - s} sec)")
 
 def create_many2many_row(conn, nb, concentration, size_t1, size_t2):
-    split_val = 500_000
+    split_val = 100_000
     done = 0
     while done < nb:
         s = time.time()
@@ -320,33 +326,41 @@ TestCase = NamedTuple('TestCase', [
     ('size_rel', int),
     ('concentration', float),  # % of size of table -> stddev of the normal distribution
 ])
+PerfCompare = NamedTuple('PerfCompare', [
+    ('mean1', float),
+    ('stddev1', float),
+    ('mean2', float),
+    ('stddev2', float),  # % of size of table -> stddev of the normal distribution
+])
+def perf_compare_str(perf: PerfCompare) -> str:
+    return f"{perf.mean1:2.6f} +- {perf.stddev1:2.6f} < {perf.mean2:2.6f} +- {perf.stddev2:2.6f} sec(*{RED} {((perf.mean2 / perf.mean1 * 100)):7.3f} {RESET}%)"
 
 # Test case attributes
 size_table_t1 = {
     'Very small': 100,
     'Small': 2_000,
-    # 'Normal': 50_000,
-    # 'Big': 1_000_000,
+    'Normal': 50_000,
+    'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 size_table_t2 = {
     'Very small': 100,
     'Small': 2_000,
-    # 'Normal': 50_000,
-    # 'Big': 1_000_000,
+    'Normal': 50_000,
+    'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 size_rel_factor = {
     'Almost not connected': 1 / 5,
     'Few connection': 1,
-    # 'Connected': 5,
-    # 'Highly connected': 20,
+    'Connected': 5,
+    'Highly connected': 20,
 }
 concentration = {
     'None': None,
     # 'Few': 50,
     'A Lot': 20,
-    # 'Very highly Concentrate': 2,
+    'Very highly Concentrate': 2,
 }
 
 TESTS: list[TestCase] = []
@@ -386,6 +400,7 @@ def launch_tests(file_to_save):
     # prepare_db
     with psycopg2.connect(CONNECTION_PARAMS) as conn:
         activate_extention(conn)
+        activate_timeout(conn, TIMEOUT_REQUEST)
         create_tables(conn)
 
     all_ready = {}
@@ -420,8 +435,8 @@ def launch_tests(file_to_save):
                     create_many_2_many_contraint_v_13(cur)
                 else:
                     create_many_2_many_contraint(cur)
-            analyse_table(conn)
             conn.commit()
+        analyse_table()
 
         res_time, res_explain = launch_test()
         all_result[test] = (res_time, res_explain, rel_size)
@@ -484,14 +499,14 @@ def interpreted_result(file):
                 if statically_faster(res_time[key1], res_time[key2]):
                     mean1, std1 = means_std(res_time[key1])
                     mean2, std2 = means_std(res_time[key2])
-                    detail_perf = f"{mean1:2.6f} +- {std1:2.6f} < {mean2:2.6f} +- {std2:2.6f} sec(*{RED} {((mean2 / mean1 * 100)):7.3f} {RESET}%)"
+                    detail_perf = PerfCompare(mean1, std1, mean2, std2)
                     faster_dict[(key1, key2)].append((test, detail_perf))
                     if key1[0] != key2[0]:
                         faster_dict_method[(key1[0], key2[0])].append((test, key1, key2, detail_perf))
                 elif statically_faster(res_time[key2], res_time[key1]):
                     mean1, std1 = means_std(res_time[key1])
                     mean2, std2 = means_std(res_time[key2])
-                    detail_perf = f"{mean2:2.6f} +- {std2:2.6f} < {mean1:2.6f} +- {std1:2.6f} sec (*{RED} {((mean1 / mean2 * 100)):7.3f} {RESET}%)"
+                    detail_perf = PerfCompare(mean2, std2, mean1, std1)
                     faster_dict[(key2, key1)].append((test, detail_perf))
                     if key1[0] != key2[0]:
                         faster_dict_method[(key2[0], key1[0])].append((test, key2, key1, detail_perf))
@@ -520,21 +535,39 @@ def interpreted_result(file):
                 #     print(test, not_exists_key, means_std(res_time[not_exists_key]))
                 #     print(res_explain[not_exists_key])
 
-        print("--" * 100)
+        print(" ------------------------------------------------------ ")
         for key, values in faster_dict.items():
-            print(key, len(values), ":")
-            print("\n".join(str(v[0]) + " \n-> " + v[1] for v in values))
+            print(key[1:], len(values), ":")
+            print("\n".join(str(v[0]) + " \n-> " + perf_compare_str(v[1]) for v in values))
             print()
 
-        print("Summarize: ")
+        print(" ------------------------------------------------------ ")
+        print("SUMMARIZE: \n")
         for methods, values in faster_dict_method.items():
-            print(f"{methods[0]} is faster than {methods[1]} in {len(values)} cases")
-            # print("\n".join(str(v[0]) + " \n-> " + v[1] for v in values))
-            # print()
+            print(" -------------------------- ")
+            timeout_faster = 0
+            mean_gain = []
+            for _, _, _, perf in values:
+                mean1 = perf.mean1
+                mean2 = perf.mean2
+                if mean2 >= TIMEOUT_REQUEST:
+                    timeout_faster += 1
+                else:
+                    mean_gain.append(mean2 / mean1 * 100)
 
-    # for key, values in by_methods.items():
-    #     print(key, fmean(values), " sec")
+            print(f"{methods[0]} is faster than {methods[1]} in {len(values)} cases:")
+            if timeout_faster:
+                print(f"Win because of {timeout_faster} timeout")
+            if mean_gain:
+                print(f"* {fmean(mean_gain):.2f} % faster in average (not take in account timeout)\n")
 
-print(f"Launch {len(TESTS)} tests\n")
-launch_tests(RESULT_FILE)
-interpreted_result(RESULT_FILE)
+            combination = [str((test[1:], key1[1:])) for test, key1, key2, detail_perf in values]
+            print("Faster + timeout win for these combination:")
+            print("- ((size_t1, size_t2, size_rel, concentration), (limit, order, extra_where))")
+            print("\n".join("- " + str(c) for c in combination))
+            print()
+
+if __name__ == "__main__":
+    print(f"Launch {len(TESTS)} tests\n")
+    launch_tests(RESULT_FILE)
+    interpreted_result(RESULT_FILE)
