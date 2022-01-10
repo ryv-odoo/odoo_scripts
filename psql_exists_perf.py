@@ -345,18 +345,20 @@ def perf_compare_str(perf: PerfCompare) -> str:
     return f"{perf.mean1:2.6f} +- {perf.stddev1:2.6f} < {perf.mean2:2.6f} +- {perf.stddev2:2.6f} sec(*{RED} {((perf.mean2 / perf.mean1 * 100)):7.3f} {RESET}%)"
 
 # Test case attributes
-size_table_t1 = {
+size_table_1 = {
+    # 'Very very small': 10,
     'Very small': 100,
     'Small': 2_000,
     'Normal': 50_000,
-    'Big': 1_000_000,
+    # 'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
-size_table_t2 = {
+size_table_2 = {
+    # 'Very very small': 10,
     'Very small': 100,
     'Small': 2_000,
     'Normal': 50_000,
-    'Big': 1_000_000,
+    # 'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 size_rel_factor = {
@@ -373,8 +375,8 @@ concentration = {
 }
 
 TESTS: list[TestCase] = []
-for st_str_t1, st_size_t1 in size_table_t1.items():
-    for st_str_t2, st_size_t2 in size_table_t2.items():
+for st_str_t1, st_size_t1 in size_table_1.items():
+    for st_str_t2, st_size_t2 in size_table_2.items():
         for srf_str, srf in size_rel_factor.items():
             for conc_str, conc in concentration.items():
                 name = (f"T1: {st_str_t1}, T2: {st_str_t2}, Rel factor: {srf_str} with concentration {conc_str}")
@@ -407,6 +409,7 @@ where_to_test = [
 
 def launch_tests(file_to_save):
     # prepare_db
+    print(f"Launch {len(TESTS)} tests\n")
     with psycopg2.connect(CONNECTION_PARAMS) as conn:
         activate_extention(conn)
         create_tables(conn)
@@ -494,17 +497,20 @@ def interpreted_result(file):
     by_methods = defaultdict(list)
     faster_dict = defaultdict(list)
     faster_dict_method = defaultdict(list)
+    each_timeout = []
     all_compare = 0
 
     with open(file, 'rb') as f:
         all_result = pickle.load(f)
 
         for test in all_result:
+            # if test not in TESTS:
+            #     pass
             res_time, res_explain, rel_size = all_result[test]
 
             def compare_two_test(key1, key2):
                 if key1 not in res_time and key2 not in res_time:
-                    print("TIMEOUT EACH ", test, key1, key2)
+                    each_timeout.append((test, key1, key2))
                 if key1 not in res_time:
                     res_time[key1] = []
                 if key2 not in res_time:
@@ -574,14 +580,14 @@ def interpreted_result(file):
             if timeout_faster:
                 print(f"Win because of {timeout_faster} timeout cases")
             if mean_gain:
-                print(f"* {GREEN}{fmean(mean_gain):.2f}{RESET} % faster in average (for {len(mean_gain)} cases) (not take in account when compare with timeout)\n")
+                print(f"* {GREEN}{fmean(mean_gain):.2f}{RESET} % faster in average (for {len(mean_gain)} cases) (excluded timeout win)\n")
 
             combination = [(test, key1[1:], detail_perf) for test, key1, key2, detail_perf in values]
             combination = sorted(combination, key=lambda x: (x[2].mean2 < TIMEOUT_REQUEST, x[2].mean2 / x[2].mean1), reverse=True)
 
             def avg_str_mean(mean):
                 return f"{(mean * 1000):4.2f}" if mean < TIMEOUT_REQUEST else "Timeout (> 5000)"
-            
+
             def pourcentage(mean1, mean2):
                 if mean2 >= TIMEOUT_REQUEST:
                     return ""
@@ -593,17 +599,19 @@ def interpreted_result(file):
             print()
 
             # Explain compare
-            c_best = combination[0]
-            print(f"Explain for the best win ({str(c_best[0].size_t1):>8} <-> {str(c_best[0].size_rel):>10} ({str(c_best[0].concentration):>4}) <-> {str(c_best[0].size_t2):>8}, {str(c_best[1]):>35}):")
-            print(f"{BOLD}{methods[0]}{RESET} in {avg_str_mean(c_best[2].mean1):>7} msec:")
-            res_explain = all_result[c_best[0]][1]
-            print((methods[0],) + c_best[1])
-            print(res_explain[(methods[0],) + c_best[1]])
-            print()
-            print(f"{BOLD}{methods[1]}{RESET} in : {avg_str_mean(c_best[2].mean2):>7} msec:")
-            print(res_explain[(methods[1],) + c_best[1]])
+            # c_best = combination[0]
+            # print(f"Explain for the best win ({str(c_best[0].size_t1):>8} <-> {str(c_best[0].size_rel):>10} ({str(c_best[0].concentration):>4}) <-> {str(c_best[0].size_t2):>8}, {str(c_best[1]):>35}):")
+            # print(f"{BOLD}{methods[0]}{RESET} in {avg_str_mean(c_best[2].mean1):>7} msec:")
+            # res_explain = all_result[c_best[0]][1]
+            # print((methods[0],) + c_best[1])
+            # print(res_explain[(methods[0],) + c_best[1]])
+            # print()
+            # print(f"{BOLD}{methods[1]}{RESET} in : {avg_str_mean(c_best[2].mean2):>7} msec:")
+            # print(res_explain[(methods[1],) + c_best[1]])
+
+        print("------------------------")
+        print(f"There are {len(each_timeout)} cases where both methods has failed (test_in_select_null vs test_exists OR test_not_in_select_null vs test_not_exists)")
 
 if __name__ == "__main__":
-    print(f"Launch {len(TESTS)} tests\n")
-    launch_tests(RESULT_FILE)
+    # launch_tests(RESULT_FILE)
     interpreted_result(RESULT_FILE)

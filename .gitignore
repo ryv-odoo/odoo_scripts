@@ -1,4 +1,5 @@
-**
+*
+!*/
 
 !.gitignore
 
@@ -8,4 +9,4 @@
 !perf_log_parse.py
 !dependencies.py
 
-!results/**
+!results/summarize.log
