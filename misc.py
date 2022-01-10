@@ -11,6 +11,8 @@ WHITE = '\033[37m'
 UNDERLINE = '\033[4m'
 RESET = '\033[0m'
 
+BOLD = "\033[1m"
+
 
 def unique(it):
     """ "Uniquifier" for the provided iterable: will output each element of

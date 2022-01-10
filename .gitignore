@@ -1,4 +1,4 @@
-*
+**
 
 !.gitignore
 
@@ -7,3 +7,5 @@
 !psql_exists_perf.py
 !perf_log_parse.py
 !dependencies.py
+
+!results/**

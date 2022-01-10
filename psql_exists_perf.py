@@ -6,11 +6,19 @@ from statistics import NormalDist, fmean, pstdev
 import random
 import itertools
 
+from misc import unique
+
 import psycopg2
 import psycopg2.extensions
 import psycopg2.errors
 
-from misc import RED, RESET, unique
+
+COLOR = False
+
+if COLOR:
+    from misc import BOLD, GREEN, RED, RESET
+else:
+    BOLD, GREEN, RED, RESET = [""] * 4
 
 PSQL_VERSION_BY_ODOO_V = {
     'v13': ['?'],
@@ -486,6 +494,7 @@ def interpreted_result(file):
     by_methods = defaultdict(list)
     faster_dict = defaultdict(list)
     faster_dict_method = defaultdict(list)
+    all_compare = 0
 
     with open(file, 'rb') as f:
         all_result = pickle.load(f)
@@ -527,6 +536,7 @@ def interpreted_result(file):
             for limit, order, where in itertools.product(limits, orders, wheres):
                 # Print when the exist is slower than the actual query
                 # test_in_select_null < test_exists
+                all_compare += 1
                 current_key = ('test_in_select_null', limit, order, where)
                 exists_key = ('test_exists', limit, order, where)
                 compare_two_test(current_key, exists_key)
@@ -540,16 +550,16 @@ def interpreted_result(file):
                 #     print(test, not_exists_key, means_std(res_time[not_exists_key]))
                 #     print(res_explain[not_exists_key])
 
-        print(" ------------------------------------------------------ ")
-        for key, values in faster_dict.items():
-            print(key[1:], len(values), ":")
-            print("\n".join(str(v[0]) + " \n-> " + perf_compare_str(v[1]) for v in values))
-            print()
+        # print(" ------------------------------------------------------ ")
+        # for key, values in faster_dict.items():
+        #     print(key[1:], len(values), ":")
+        #     print("\n".join(str(v[0]) + " \n-> " + perf_compare_str(v[1]) for v in values))
+        #     print()
 
-        print(" ------------------------------------------------------ ")
-        print("SUMMARIZE: \n")
+        print("------------------------------------------------------ ")
+        print("RESULT SUMMARIZE: \n")
         for methods, values in faster_dict_method.items():
-            print(" -------------------------- ")
+            print("-------------------------- \n")
             timeout_faster = 0
             mean_gain = []
             for _, _, _, perf in values:
@@ -560,17 +570,38 @@ def interpreted_result(file):
                 else:
                     mean_gain.append(mean2 / mean1 * 100)
 
-            print(f"{methods[0]} is faster than {methods[1]} in {len(values)} cases:")
+            print(f"{BOLD}{methods[0]}{RESET} is faster than {BOLD}{methods[1]}{RESET} in {len(values)} cases (on {all_compare} cases)")
             if timeout_faster:
-                print(f"Win because of {timeout_faster} timeout")
+                print(f"Win because of {timeout_faster} timeout cases")
             if mean_gain:
-                print(f"* {fmean(mean_gain):.2f} % faster in average (not take in account timeout)\n")
+                print(f"* {GREEN}{fmean(mean_gain):.2f}{RESET} % faster in average (for {len(mean_gain)} cases) (not take in account when compare with timeout)\n")
 
-            combination = [str((test[1:], key1[1:])) for test, key1, key2, detail_perf in values]
-            print("Faster + timeout win for these combination:")
-            print("- ((size_t1, size_t2, size_rel, concentration), (limit, order, extra_where))")
-            print("\n".join("- " + str(c) for c in combination))
+            combination = [(test, key1[1:], detail_perf) for test, key1, key2, detail_perf in values]
+            combination = sorted(combination, key=lambda x: (x[2].mean2 < TIMEOUT_REQUEST, x[2].mean2 / x[2].mean1), reverse=True)
+
+            def avg_str_mean(mean):
+                return f"{(mean * 1000):4.2f}" if mean < TIMEOUT_REQUEST else "Timeout (> 5000)"
+            
+            def pourcentage(mean1, mean2):
+                if mean2 >= TIMEOUT_REQUEST:
+                    return ""
+                return f" (* {GREEN}{(mean2 / mean1 * 100):6.2f}{RESET} %)"
+
+            print("Faster + timeout win for these combination (sorted by the bigger gain):")
+            print(f"· #table_1 <-> #table_rel (conc) <-> #table_2, {'(limit, order, where)':>35}: mean1 msec vs mean2 msec")
+            print("\n".join(f"· {str(c[0].size_t1):>8} <-> {str(c[0].size_rel):>10} ({str(c[0].concentration):>4}) <-> {str(c[0].size_t2):>8}, {str(c[1]):>35}: {avg_str_mean(c[2].mean1):>7} msec vs {avg_str_mean(c[2].mean2):>7} msec{pourcentage(c[2].mean1, c[2].mean2)}" for c in combination))
             print()
+
+            # Explain compare
+            c_best = combination[0]
+            print(f"Explain for the best win ({str(c_best[0].size_t1):>8} <-> {str(c_best[0].size_rel):>10} ({str(c_best[0].concentration):>4}) <-> {str(c_best[0].size_t2):>8}, {str(c_best[1]):>35}):")
+            print(f"{BOLD}{methods[0]}{RESET} in {avg_str_mean(c_best[2].mean1):>7} msec:")
+            res_explain = all_result[c_best[0]][1]
+            print((methods[0],) + c_best[1])
+            print(res_explain[(methods[0],) + c_best[1]])
+            print()
+            print(f"{BOLD}{methods[1]}{RESET} in : {avg_str_mean(c_best[2].mean2):>7} msec:")
+            print(res_explain[(methods[1],) + c_best[1]])
 
 if __name__ == "__main__":
     print(f"Launch {len(TESTS)} tests\n")
