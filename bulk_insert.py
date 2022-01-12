@@ -4,10 +4,14 @@ from statistics import fmean, pstdev
 import matplotlib.pyplot as plt
 import tabulate
 
-from odoo_scripts.misc import BLUE, GREEN, RED, RESET, YELLOW
+COLOR = True
 
+if COLOR:
+    from misc import BLUE, GREEN, RED, RESET, YELLOW
+else:
+    BLUE, GREEN, RED, RESET, YELLOW = [""] * 5
 
-SIZES = [1, 3, 5, 10, 101, 1000]
+SIZES = [1, 2, 3, 5, 10, 101, 1000]
 MODULE_INSTALLED = "purchase,sale,mrp,project"
 
 FLAG_TO_DESC = {
@@ -39,6 +43,11 @@ def parse_lines_create(lines, match):
     return len(lines), global_time, by_model, nb_by_model, by_size, by_model_size
 
 def remove_outliner_by_model_size(datas):
+    X_BEST = 20
+
+    def x_bests(values):
+        return sorted(values)[:X_BEST]
+
     outlier_thr = 2
 
     for key in datas:
@@ -48,14 +57,18 @@ def remove_outliner_by_model_size(datas):
             std = pstdev(values)
             # outlier = [val for val in values if (val > (mean + outlier_thr * std)) or (val < (mean - outlier_thr * std)) ]
             # print(f"Outliers {key}: {len(outlier)} / {len(values)}")
-            by_model_size[key] = [val for val in values if not ((val > (mean + outlier_thr * std)) or (val < (mean - outlier_thr * std)))]
+            values = [val for val in values if not ((val > (mean + outlier_thr * std)) or (val < (mean - outlier_thr * std)))]
+            # values = x_bests(values)
+            by_model_size[key] = values
 
         for model, size_dict in by_model.items():
             new_values = {}
             for size, values in size_dict.items():
                 mean = fmean(values)
                 std = pstdev(values)
-                new_values[size] = [val for val in values if not ((val > (mean + outlier_thr * std)) or (val < (mean - outlier_thr * std)))]
+                values = [val for val in values if not ((val > (mean + outlier_thr * std)) or (val < (mean - outlier_thr * std)))]
+                # values = x_bests(values)
+                new_values[size] = values
             by_model[model] = new_values
 
 def print_results(lenn, global_t, by_model, nb_by_model, by_size, by_model_size):
@@ -139,7 +152,7 @@ def graph_all_creates_comparison(datas, models, title=""):
     plt.savefig(f'%_time_spend_{title}.png', bbox_inches='tight')
 
 
-def graph_average_comparison(data_before, data_after, models):
+def graph_average_comparison_line(data_before, data_after, models):
     _, _, by_model, _, _, _ = data_before
     _, _, by_model_after, _, _, _ = data_after
 
@@ -170,8 +183,52 @@ def graph_average_comparison(data_before, data_after, models):
     ax.set_xlabel("Batch Size")
     plt.xscale('log')
     fig.set_size_inches((20, 12), forward=False)
-    plt.savefig('time_vs_batch_time.png', bbox_inches='tight', dpi=400)
+    plt.savefig('time_vs_batch_time_line.png', bbox_inches='tight', dpi=400)
 
+
+def graph_average_comparison_bar(data_before, data_after, models):
+    _, _, by_model, _, _, _ = data_before
+    _, _, by_model_after, _, _, _ = data_after
+    SIZE_TO_COMPARE = [1, 3, 10, 101, 1000]
+    width = 0.35
+    # plot
+    fig, axs = plt.subplots(len(SIZE_TO_COMPARE))
+    fig.suptitle("Insertion Loop time, before vs after")
+    for i, size in enumerate(SIZE_TO_COMPARE):
+        labels, before, after = [], [], []
+        for model in models:
+            values_before = by_model[model].get(size, [])
+            values_after = by_model_after[model].get(size, [])
+
+            labels.append(model)
+            if len(values_before) < 3 or len(values_after) < 3:
+                print(f"No enought data for {model}/{size}")
+                before.append(0)
+                after.append(0)
+                continue
+
+            before.append(fmean(values_before) * 1000)
+            after.append(fmean(values_after) * 1000)
+
+        ax = axs[i]
+        x_begin = list(i - (width / 2) for i in range(len(labels)))
+        x_end = list(i + (width / 2) for i in range(len(labels)))
+        x_middle = list(range(len(labels)))
+        rects_begin = ax.bar(x_begin, before, width, label='Before')
+        rects_end = ax.bar(x_end, after, width, label='After')
+
+        ax.set_ylabel('Time in ms')
+        ax.set_title(f'Batch size = {size}')
+        ax.set_xticks(x_middle, labels)
+        ax.legend()
+
+        ax.bar_label(rects_begin, labels=[f"{b:3.2f}" if b else "  No Data" for b in before], padding=3)
+        ax.bar_label(rects_end, labels=[f"{a:3.2f}" if a else "" for a in after], padding=3)
+
+    fig.set_size_inches((20, 20), forward=False)
+    plt.tight_layout(pad=2)
+    plt.savefig('time_vs_batch_time_bar.png', dpi=400)
+    # plt.show()
 
 def table_size_solution(data_before, data_after, bests_models):
     # - Size vs time of insert data of each model table
@@ -253,7 +310,7 @@ for f1, f2 in zip(TO_COMPARE, TO_COMPARE[1:]):
         print(f"{f1} vs {f2}")
         table_size_solution(data_f1[flag], data_f2[flag], models)
 
-    graph_average_comparison(data_f1["insert_loop"], data_f2["insert_loop"], bests_models)
+    graph_average_comparison_bar(data_f1["insert_loop"], data_f2["insert_loop"], bests_models)
     comparason_model = get_models_most_data(data_f1['insert_loop'])[:8]
     graph_all_creates_comparison(data_f1, comparason_model, "Before")
     graph_all_creates_comparison(data_f2, comparason_model, "After")
