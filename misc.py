@@ -1,8 +1,11 @@
 
+import time
 
 from typing import Iterable, Mapping
 
+import psycopg2
 
+# -------------- Helper Constants
 BLACK = '\033[30m'
 RED = '\033[31m'
 GREEN = '\033[32m'
@@ -17,6 +20,19 @@ RESET = '\033[0m'
 BOLD = "\033[1m"
 
 
+# -------------- Helpers
+def x_bests(values, x):
+    return sorted(values)[:x]
+
+def timed_call(method, *method_args, print_res=True, suffix=''):
+    start = time.time_ns()
+    method(*method_args)
+    delta = (time.time_ns() - start) / 1_000_000
+    if print_res:
+        print(f"'{method.__name__}' {suffix}: {delta:.3f} ms")
+    return delta
+
+# -------------- Odoo method/class
 def unique(it):
     """ "Uniquifier" for the provided iterable: will output each element of
     the iterable once.
@@ -31,10 +47,6 @@ def unique(it):
         if e not in seen:
             seen.add(e)
             yield e
-
-def x_bests(values, x):
-    return sorted(values)[:x]
-
 
 def freehash(arg):
     try:
@@ -73,3 +85,30 @@ class frozendict(dict):
 
     def __hash__(self):
         return hash(frozenset((key, freehash(val)) for key, val in self.items()))
+
+# -------------------- PostgreSQL helper
+def psql_activate_trigram(CONNECTION_PARAMS):
+    with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cur:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+
+def psql_activate_unaccent(CONNECTION_PARAMS):
+    with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cur:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS unaccent")
+
+def psql_set_timeout(CONNECTION_PARAMS, timeout=10):
+    with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cur:
+        cur.execute(f"ALTER ROLE odoo SET statement_timeout = '{timeout}s'")
+
+def psql_vacuum_analyse(CONNECTION_PARAMS, table_name):
+    with psycopg2.connect(CONNECTION_PARAMS) as conn:
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # Vaccum need to be done outside transaction block
+        with conn.cursor() as cur:
+            cur.execute(f"VACUUM ANALYZE {table_name}")
+
+def psql_explain(cur, query):
+    cur.execute("EXPLAIN ANALYZE " + query)
+    return "\n".join(s for s, in cur.fetchall())
+
+def psql_explain_analyse(cur, query):
+    cur.execute("EXPLAIN ANALYZE " + query)
+    return "\n".join(s for s, in cur.fetchall())

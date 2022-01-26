@@ -9,5 +9,6 @@
 !bulk_insert.py
 !batch_update_perf.py
 !dependencies.py
+!test_indexes.py
 
 !res_exists_perf/*.log
