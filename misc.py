@@ -1,7 +1,8 @@
 
 import time
 
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, MutableSet
+from statistics import fmean, pstdev
 
 import psycopg2
 
@@ -21,6 +22,13 @@ BOLD = "\033[1m"
 
 
 # -------------- Helpers
+def remove_outliers(values, outlier_thr = 2):
+    mean = fmean(values)
+    std = pstdev(values)
+    down_threeshold = (mean - outlier_thr * std)
+    up_threeshold = (mean + outlier_thr * std)
+    return list(filter(lambda v: v > down_threeshold and v < up_threeshold, values))
+
 def x_bests(values, x):
     return sorted(values)[:x]
 
@@ -85,6 +93,38 @@ class frozendict(dict):
 
     def __hash__(self):
         return hash(frozenset((key, freehash(val)) for key, val in self.items()))
+
+class OrderedSet(MutableSet):
+    """ A set collection that remembers the elements first insertion order. """
+    __slots__ = ['_map']
+
+    def __init__(self, elems=()):
+        self._map = dict.fromkeys(elems)
+
+    def __contains__(self, elem):
+        return elem in self._map
+
+    def __iter__(self):
+        return iter(self._map)
+
+    def __len__(self):
+        return len(self._map)
+
+    def add(self, elem):
+        self._map[elem] = None
+
+    def discard(self, elem):
+        self._map.pop(elem, None)
+
+    def update(self, elems):
+        self._map.update(zip(elems, itertools.repeat(None)))
+
+    def difference_update(self, elems):
+        for elem in elems:
+            self.discard(elem)
+
+    def __repr__(self):
+        return f'{type(self).__name__}({list(self)!r})'
 
 # -------------------- PostgreSQL helper
 def psql_activate_trigram(CONNECTION_PARAMS):
