@@ -7,9 +7,16 @@ from statistics import NormalDist
 from time import sleep, time
 from os import path
 
+import matplotlib.pyplot as plt
 import grequests
 
-from misc import BOLD, RESET, remove_outliers, GREEN, RED
+COLOR = True
+if COLOR:
+    from misc import BOLD, GREEN, RED, RESET
+else:
+    BOLD, GREEN, RED, RESET = [""] * 4
+
+from misc import remove_outliers, x_bests
 
 URI = "http://127.0.0.1:8069"
 NB_TODO = 2_000
@@ -28,13 +35,13 @@ MODULE_INSTALL = {  # module install -> db_name (should already installed)
 
 # REQUEST ATTRIBUTE
 AUTHENTICATIONS_URL = {
-    'nodb': '/test_http/greeting',
+    'nodb': '/test_http/greeting-none',
     'user': '/test_http/greeting-user',
-    'public_website': '/',
+    'public_website': '/',  # You should modified index and return directly
     # 'user': '',
 }
 SESSION = [  # % of request with a session already present
-    # 0,
+    0,
     # 80,
     100,
 ]
@@ -76,23 +83,26 @@ def perf_execution(to_save):
             response = grequests.map([grequests.AsyncRequest('POST', URI + '/web/login', cookies=cookies, params={
                 'login': 'admin', 'password': 'admin', 'csrf_token': csrf, 'db': db
             })])
-            session_auth = response[0].cookies['session_id']
+            session = response[0].cookies.get('session_id', session)
             assert response[0].status_code == 200
 
             for (auth, url), session_nb, para_req in product(AUTHENTICATIONS_URL.items(), SESSION, PARALLELE_REQUEST):
                 if 'website' in auth and 'website' not in module_install:
                     continue
+                if 'user' in auth and session_nb < 100.0:
+                    continue
 
-                _ = grequests.map([grequests.AsyncRequest('GET', URI + url)] * 100)
+                cookies = {'session_id': session}
+                _ = grequests.map([grequests.AsyncRequest('GET', URI + url, cookies=cookies, allow_redirects=False)] * int(NB_TODO / 4), size=para_req)
 
                 requests = []
                 for i in range(NB_TODO):
                     cookies = {}
                     if i % 100 < session_nb:
-                        cookies['session_id'] = session_auth
+                        cookies['session_id'] = session
                     if 'user' in auth:
-                        cookies['session_id'] = session_auth
-                    requests.append(grequests.AsyncRequest('GET', URI + url, cookies=cookies))
+                        cookies['session_id'] = session
+                    requests.append(grequests.AsyncRequest('GET', URI + url, cookies=cookies, allow_redirects=False))
 
                 s = time()
                 responses = grequests.map(requests, size=para_req)
@@ -129,21 +139,103 @@ def perf_execution(to_save):
             print("Save result")
             pickle.dump(all_result, fw)
 
+def compare_graph(before, after):
+    with open(FILE_RESULT, 'rb') as fr:
+        all_result: dict = pickle.load(fr)
+        before_res = all_result[before]
+        after_res = all_result[after]
+
+        labels = []
+        total_mean_before = []
+        mean_before = []
+        median_before = []
+        total_mean_after = []
+        mean_after = []
+        median_after = []
+        for key in before_res:
+            if key not in after_res:
+                continue
+            db, worker_nb, url, session_nb, para_req = key
+            if 'user' in url and session_nb < 100.0:
+                continue
+            before_values, before_time = before_res[key]
+            after_values, after_time = after_res[key]
+            label = [
+                url,
+                'base' if db == 'base_db' else 'website',
+                'Multi-Threading' if worker_nb is None else f'Multi-Worker ({worker_nb})',
+                'Sequential requests' if para_req == 1 else f'Parallel requests ({para_req})',
+                'Without session' if session_nb == 0 else 'With session',
+            ]
+            labels.append('\n'.join(label))
+            total_mean_before.append(before_time / len(before_values))
+            total_mean_after.append(after_time / len(after_values))
+
+            n_before = NormalDist.from_samples(before_values)
+            n_after = NormalDist.from_samples(after_values)
+            mean_before.append(n_before.mean)
+            median_before.append(n_before.median)
+            mean_after.append(n_after.mean)
+            median_after.append(n_after.median)
+
+
+        width = 0.40
+        x_before = list(i - width / 2 for i in range(len(labels)))
+        x_after = list(i + width / 2 for i in range(len(labels)))
+
+        fig, ax = plt.subplots()
+
+        rects1 = ax.bar(x_before, total_mean_before, width, label='master')
+        rects2 = ax.bar(x_after, total_mean_after, width, label='httpocalypse')
+
+        ax.set_ylabel('Times (ms)')
+        ax.set_title('Master vs Httpocalypse Benchmark (Total time / nb request)')
+        ax.set_xticks(range(len(labels)), labels, size='x-small')
+        ax.legend()
+
+        ax.bar_label(rects1, fmt='%.3f', padding=3)
+        ax.bar_label(rects2, fmt='%.3f', padding=3)
+
+        fig.set_size_inches((50, 10), forward=False)
+        plt.tight_layout(pad=1, w_pad=1)
+        plt.savefig('http_total.png', dpi=400)
+
+        fig, ax = plt.subplots()
+
+        rects1 = ax.bar(x_before, mean_before, width, label='master')
+        rects2 = ax.bar(x_after, mean_after, width, label='httpocalypse')
+
+        ax.set_ylabel('Times (ms)')
+        ax.set_title('Master vs Httpocalypse Benchmark (Mean request)')
+        ax.set_xticks(range(len(labels)), labels, size='x-small')
+        ax.legend()
+
+        ax.bar_label(rects1, fmt='%.3f', padding=3)
+        ax.bar_label(rects2, fmt='%.3f', padding=3)
+
+        fig.set_size_inches((50, 10), forward=False)
+        plt.tight_layout(pad=1, w_pad=1)
+        plt.savefig('http_mean.png', dpi=400)
+
+
 def compare_result(before, after):
+    KEYS_NAME = ("db", "worker", "url", "% session set", "parallel request")
     with open(FILE_RESULT, 'rb') as fr:
         all_result: dict = pickle.load(fr)
         print("Result contains these keys : ", list(all_result))
         before_res = all_result[before]
         after_res = all_result[after]
-        better_nb = 0 
+        better_nb = 0
         all_nb = 0
         for key in before_res:
             if key not in after_res:
                 continue
+            if 'user' in key[2] and key[3] < 100.0:
+                continue
             all_nb += 1
             before_values, before_time = before_res[key]
             after_values, after_time = after_res[key]
-            print(f"\n--------------- FOR {key} (db, worker, url, % session set, parallel request)")
+            print(f"\n--------------- FOR {', '.join(f'{k1}: {k2}' for k1, k2 in zip(KEYS_NAME, key))}")
             print("Total time:")
             color = RED if before_time < after_time else GREEN
             print(f"\t{before} {before_time} ms for {len(before_values)}")
@@ -169,13 +261,28 @@ def compare_result(before, after):
             print(f"\t{after} {color}{n_after.mean:.3f}{RESET} ms +- {n_after.stdev:.3f} ms")
         print(f"In {better_nb}/{all_nb} {after} do better than {before}")
 
+
+USAGE = f"""\
+Benchmark the Odoo HTTP layer. First command generates a pickle file
+<filename> in the working directory. Second command compares two
+pickle files.
+
+usage:
+  {__file__} <filename>
+  {__file__} compare <filename> <filename>
+"""
+
 if __name__ == "__main__":
 
     if len(sys.argv) <= 1:
-        print("No args, EXIT")
+        print(USAGE)
+        exit(-1)
+    if sys.argv[1] == 'compare' and len(sys.argv) <= 3:
+        print(USAGE)
+        exit(-1)
 
-    TO_SAVE = sys.argv[1]
-    if TO_SAVE == 'compare':
-        compare_result(sys.argv[2], sys.argv[3])
+    if sys.argv[1] == 'compare':
+        compare_graph(sys.argv[2], sys.argv[3])
+        # compare_result(sys.argv[2], sys.argv[3])
     else:
-        perf_execution(TO_SAVE)
+        perf_execution(sys.argv[1])
