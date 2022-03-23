@@ -13,3 +13,4 @@
 !perf_httpapocalypse.py
 
 !res_exists_perf/*.log
+!memory_shared_lru/*.py
