@@ -41,6 +41,21 @@ def test_correctness(dict_like):
     except:
         assert False, "Should raise KeyError"
 
+    for i in range(20):
+        # 16_777_216 bytes = 16 MB
+        dict_like[str(i)] = "a" * 1
+    assert len(dict_like) == 16, f"{len(dict_like)} instead of 2048"
+
+    print(dict_like)
+
+    for i in range(20):
+        print("try with: ", str(i))
+        if str(i) in dict_like:
+            del dict_like[str(i)]
+    print(dict_like)
+    assert len(dict_like) == 0, f"{len(dict_like)} instead of 0"
+
+
 def test_concurrency(dict_like):
     def parrallele_method(dict_like):
         time.sleep(0.2)
@@ -67,14 +82,14 @@ def test_concurrency(dict_like):
         assert dict_like['u' + str(pid)] == str(pid) * 100, f"{dict_like[pid]} != {str(pid) * 100}"
 
 obj_to_test = {
-    'normal_dict': {},
-    'Manager().dict - no LRU': Manager().dict(),
+    # 'normal_dict': {},
+    # 'Manager().dict - no LRU': Manager().dict(),
     # 'Redis': redis.Redis(),
     # 'memcached': pylibmc.Client(["127.0.0.1"],
     #     binary=True,
     #     behaviors={"tcp_nodelay": True}
     # ),
-    'current: numpy + single large shared memory': sm_lru_fp.lru_shared(4096),
+    'current: numpy + single large shared memory': sm_lru_fp.lru_shared(),
     # 'shared memory_lru v1 - 3 lists: key, prev, next': sm_lru_v1.lru_shared(4096),
     # 'shared memory_lru v2 - list of (key, prev, next)': sm_lru_v2.lru_shared(4096),
     # 'shared memory_lru v3 - list of (key, prev, next) - no LRU touch on __get__': sm_lru_v3.lru_shared(4096),
@@ -123,21 +138,21 @@ if __name__ == '__main__':
         else:
             print("Success Correctness")
 
-        try:
-            test_concurrency(dict_like)
-        except AssertionError as e:
-            print(f"Fail test for {test}: {e}")
-            print(traceback.format_exc())
-        except Exception as e:
-            print(f"Fail for {test}: {e}")
-            print(traceback.format_exc())
-        else:
-            print("Success concurrency")
+        # try:
+        #     test_concurrency(dict_like)
+        # except AssertionError as e:
+        #     print(f"Fail concurrency test for {test}: {e}")
+        #     print(traceback.format_exc())
+        # except Exception as e:
+        #     print(f"Fail concurrency for {test}: {e}")
+        #     print(traceback.format_exc())
+        # else:
+        #     print("Success concurrency")
 
-        try:
-            del dict_like
-        except Exception as e:
-            print(f"Fail for {test}: {e}")
-            print(traceback.format_exc())
-        else:
-            print("Success delete")
+        # try:
+        #     del dict_like
+        # except Exception as e:
+        #     print(f"Fail for {test}: {e}")
+        #     print(traceback.format_exc())
+        # else:
+        #     print("Success delete")

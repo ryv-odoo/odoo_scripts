@@ -1,6 +1,7 @@
 
 
 
+from multiprocessing import Process
 import os
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing import RLock, Lock
@@ -16,7 +17,7 @@ val = Value(c_int64, 1, lock=b)
 nor = 1
 pid = os.fork()
 if pid == 0:  # child
-    print("Child:", b, val.value, nor)
+    print("Child:", b, val.value, nor, hash("a"))
     print("child val * 2")
     val.value = val.value * 2
     nor *= 2
@@ -31,7 +32,7 @@ if pid == 0:  # child
     print("Child will close in 5 sec")
     sleep(5)
 else:
-    print("Parent:", b, val.value, nor)
+    print("Parent:", b, val.value, nor, hash("a"))
     print("parent val * 2")
     val.value = val.value * 2
     nor *= 2
