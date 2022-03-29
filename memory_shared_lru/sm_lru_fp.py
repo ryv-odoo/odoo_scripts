@@ -1,24 +1,30 @@
 #from multiprocessing.managers import SharedMemoryManager
 import itertools
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import RLock
+from multiprocessing import Lock
 import numpy
 import marshal
 import functools
 
 
 class lru_shared(object):
-    def __init__(self, size=32):
+    def __init__(self, size=4096):
         assert size > 0 and (size & (size - 1) == 0), "LRU size must be an exponantiel of 2"
-        self.mask = size - 1
         self.size = size
-        byte_size = size * 4096
+        self.mask = size - 1
+        self.max_length = size // (3/2)  # should be always < than size. more it is big more there is hash conflict
+        byte_size = size * 4096  # 4096 * 4096 = 16 MB by default
+        try:
+            self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
+        except FileExistsError:
+            self.sm = SharedMemory(name="odoo_sm_lru_shared")
+            if self.sm.size != byte_size:
+                raise MemoryError("The size of the shared memory doesn't match, exit")
 
-        self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
         self.sm.buf[:] = b'\x00' * byte_size
         data = [
             ('head', numpy.int32, (3,)),     # Contains root, length and free_len : 12 bytes
-            ('ht', numpy.int64, (size,)),    # hash array: size * 8 bytes = 32768 bytes
+            ('ht', numpy.int64, (size,)),    # hash array: 8 bytes * size = 32768 bytes
             ('prev', numpy.int32, (size,)),  # previous index array (of the linked list), if == -1, this index is empty: 4 bytes * size
             ('nxt', numpy.int32, (size,)),   # next index array (of the linked list), if == -1, this index is empty : 4 bytes * size
             ('data_idx', numpy.uint64, (size, 2)),  # data (position, size) array
@@ -32,7 +38,7 @@ class lru_shared(object):
 
         self.data = self.sm.buf[end: byte_size]
         self.data_free[0] = [0, (byte_size) - end]
-        self.lock = RLock()
+        self.lock = Lock()
 
         self.touch = 1        # used to touch the lru periodically, not 100% of the time
         self.root = -1        # stored at end of self.prev
@@ -50,7 +56,7 @@ class lru_shared(object):
             if self.data_free[pos,1] >= size:
                 break
         else:
-            raise "no memory"
+            raise MemoryError("No shared memory for key/value data")
 
         mem_pos = int(self.data_free[pos,0])
         self.data[mem_pos:(mem_pos+size)] = data
@@ -81,15 +87,15 @@ class lru_shared(object):
             self.free_len = len(mems)
             mems = self.data_free[:len(mems)] = mems[mems[:, 1].argsort()[::-1]]
 
-    def mset(self, index, key, prev, nxt):
+    def _set_entry(self, index, key, prev, nxt):
         self.prev[index] = prev
         self.nxt[index] = nxt
         self.ht[index] = key
 
-    def mget(self, index):
+    def _get_entry(self, index):
         return (self.ht[index], self.prev[index], self.nxt[index])
 
-    def index_get(self, hash_):
+    def _index_iterator(self, hash_):
         for i in range(self.size):
             yield (hash_ + i) & self.mask
 
@@ -97,76 +103,52 @@ class lru_shared(object):
         return marshal.loads(self.data[self.data_idx[index, 0]:])
 
     def lookup(self, key_, hash_):
-        for index in self.index_get(hash_):
-            key, prev, nxt = self.mget(index)
-            if not key:
-                return (index, key, prev, nxt, None)
-            if key == hash_:
+        for index in self._index_iterator(hash_):
+            key_hash, prev, nxt = self._get_entry(index)
+            if not key_hash:
+                return (index, key_hash, prev, nxt, None)
+            if key_hash == hash_:
                 (key_full, val) = self.data_get(index)
                 if key_full == key_:
-                    return (index, key, prev, nxt, val)
-        raise "memory full means bug"
+                    return (index, key_hash, prev, nxt, val)
+        raise MemoryError("Hash table full, doesn't make any sense, LRU is broken")
 
-    def __getitem__(self, key_):
-        have_lock = self.lock.acquire(block=False)
-        if not have_lock:  # Or block ?
-            raise KeyError("Lock cannot be acquire")
-        index, key, prev, nxt, val = self.lookup(key_, hash(key_))
-        self.lock.release()
-        if val is None:
-            raise KeyError(f"{key_} doesn't not exist")
-        self.touch = (self.touch + 1) & 7
-        if not self.touch:   # lru touch every 8th reads: not sure about this optim?
-            if self.lock.acquire(block=False):
-                try:
-                    self.lru_touch(index, key, prev, nxt)
-                finally:
-                    self.lock.release()
-        return val
-
-    def __setitem__(self, key, value):
-        hash_ = hash(key)
-        with self.lock:
-            index, key_, prev, nxt, val = self.lookup(key, hash_)
-            if val is None:
-                self.length += 1
-            else:  # Shouldn't happen, there should ba always a place
-                self._free(index)
-            self.ht[index] = hash_
-            self.lru_touch(index, hash_, None, None)
-            self._malloc(index, (key, value))
-            while self.length > (self.size >> 1):
-                self.lru_pop()
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
     def lru_pop(self):
         root = self.root
         if root == -1:
-            return False
-        _, prev_index, _ = self.mget(root)
-        self._del_index(prev_index, *self.mget(prev_index))
+            return
+        _, prev_index, _ = self._get_entry(root)
+        self._del_index(prev_index, *self._get_entry(prev_index))
 
     def lru_touch(self, index, key, prev, nxt):
         root = self.root
         if root == -1:
             self.root = index
-            self.mset(index, key, index, index)
-            return True
+            self._set_entry(index, key, index, index)
+            return
+        if root == index:
+            return
 
-        if prev is not None:
+        # Pop me from neibourg if i am not new in the list
+        if prev is not None and nxt is not None:
             self.prev[nxt] = prev
             self.nxt[prev] = nxt
 
-        rprev = self.prev[root]
-        self.prev[index] = rprev
+        # Change the root to be my nxt and me to have as prev the last node
+        root_prev = self.prev[root]
+        self.nxt[root_prev] = index
         self.nxt[index] = root
-
+        self.prev[index] = root_prev
         self.prev[root] = index
-        self.nxt[rprev] = index
+
         self.root = index
 
-    # NOTE: delete the keys that are between this element, and the next free spot, having
-    #       an index lower or equal to the position we delete. (conflicts handling) or
-    #       move them by 1 position left
     def _del_index(self, index, key, prev, nxt):
 
         if prev == index:
@@ -178,31 +160,63 @@ class lru_shared(object):
                 self.root = nxt
 
         self._free(index)
-        self.mset(index, 0, 0, 0)
+        self._set_entry(index, 0, 0, 0)
         self.length -= 1
 
+        # Delete the keys that are between this element, and the next free spot, having
+        # an index lower or equal to the position we delete (conflicts handling).
         def change_index(old_index, new_index):
-            print(f"Move index {old_index} -> {new_index}")
-            key_i, prev_i, next_i = self.mget(old_index)
+            key_i, prev_i, next_i = self._get_entry(old_index)
             self.nxt[prev_i] = new_index
             self.prev[next_i] = new_index
-            self.mset(new_index, key_i, prev_i, next_i)
-            self.mset(old_index, 0, 0, 0)
-            self.data_idx[new_index] = self.data_idx[old_index]
-            self.data_idx[old_index] = (0, 0)
-            print(old_index, self.mget(old_index))
+            self._set_entry(new_index, key_i, prev_i, next_i)
+            self._set_entry(old_index, 0, 0, 0)
+            self.data_idx[new_index] = self.data_idx[old_index][:]
+            self.data_idx[old_index] = [0, 0]
+            if self.root == old_index:
+                self.root = new_index
 
-        # move next entry who share the same hash & mask
         entry_empty = index
-        for i in itertools.chain(range(index + 1, self.size), range(0, index)) :
-            if self.ht[i]:
-                if (self.ht[i] & self.mask) == (key & self.mask):
-                    change_index(i, entry_empty)
-                    entry_empty = i
-                else:
-                    pass # not a empty, continue to search
-            else:
+        for i in itertools.chain(range(index + 1, self.size), range(index)):
+            if not self.ht[i]:
                 break
+            if (i > index and (self.ht[i] & self.mask) <= entry_empty) or (i < index and (self.ht[i] & self.mask) >= entry_empty):
+                change_index(i, entry_empty)
+                entry_empty = i
+
+    def __getitem__(self, key_):
+        # have_lock = self.lock.acquire(block=False)
+        # if not have_lock:  # Or block ?
+        #     raise KeyError("Lock cannot be acquire")
+        hash_ = hash(key_)
+        with self.lock:
+            index, key, prev, nxt, val = self.lookup(key_, hash_)
+        if val is None:
+            raise KeyError(f"{key_} doesn't not exist")
+        # self.touch = (self.touch + 1) & 7
+        # if not self.touch:   # lru touch every 8th reads: not sure about this optim?
+        if self.lock.acquire(block=False):
+            try:
+                self.lru_touch(index, key, prev, nxt)
+            finally:
+                self.lock.release()
+        return val
+
+    def __setitem__(self, key, value):
+        hash_ = hash(key)
+        if not hash_:
+            raise KeyError(f"hash_ of key is falsy for {key} ({hash_}) {value}, Not supported for now")
+        with self.lock:
+            index, _key, _prev, _nxt, val = self.lookup(key, hash_)
+            if val is None:
+                self.length += 1
+            else:
+                self._free(index)
+            self.ht[index] = hash_
+            self.lru_touch(index, hash_, None, None)
+            self._malloc(index, (key, value))
+            while self.length > self.max_length:
+                self.lru_pop()
 
     def __del__(self):
         del self.head
@@ -212,6 +226,7 @@ class lru_shared(object):
         del self.data_idx
         del self.data_free
         del self.data
+        del self.sm.buf
         self.sm.close()
         self.sm.unlink()
 
@@ -226,40 +241,84 @@ class lru_shared(object):
         return True
 
     def __delitem__(self, key):
-        print("Try to delete key=", key)
         hash_ = hash(key)
-        index, key, prev, nxt, val = self.lookup(key, hash_)
-        if val is None:
-            KeyError(f"{key} doesn't not exist, cannot delete it")
-        self._del_index(index, key, prev, nxt)
+        with self.lock:
+            index, key, prev, nxt, val = self.lookup(key, hash_)
+            if val is None:
+                KeyError(f"{key} doesn't not exist, cannot delete it")
+            self._del_index(index, key, prev, nxt)
+
+    def __iter__(self):
+        if self.root == -1:
+            return iter(())
+        node_index = self.root
+        while True:
+            _hash_key, _prev, nxt = self._get_entry(node_index)
+            data = self.data_get(node_index)
+            yield data[0], data[1]
+            node_index = nxt
+            if node_index == self.root:
+                break
 
     def __str__(self):
         if self.root == -1:
             return '[]'
 
-        node = self.root
+        node_index = self.root
         result = []
         while True:
-            key, prev, nxt = self.mget(node)
-            data = self.data_get(node)
-            result.append(f'{data[0]} (hash & mask: {key & self.mask}, index: {node}, hash: {key:+}): {data[1]}')
-            node = nxt
-            if node == self.root:
+            _hash_key, _prev, nxt = self._get_entry(node_index)
+            data = self.data_get(node_index)
+            result.append(f'{data[0]} (hash & mask: {_hash_key & self.mask}, index: {node_index}, hash: {_hash_key:+}): {data[1]}')
+            node_index = nxt
+            if node_index == self.root:
                 return f'hashtable size: {self.size}, mask: {self.mask}, len: {str(self.length)}\n' + '\n'.join(result)
 
 
 if __name__=="__main__":
-    lru = lru_shared(4)
-    lru["hello"] = "Bonjour!"
+    lru = lru_shared(16)
+
+    # hash of key == 0 doesn't work now
+    lru[lru.size] = "test"  # hash & mask = 0, should be at index 0
+    lru[1] = "other"  # hash & mask = 1 should be at index 1
+    lru[lru.size * 2] = "test * 2"  # hash & mask = 0, should be at index 2
+
+    del lru[1]
+    # now lru.size * 2 should be in the index 1
+    assert lru.ht[1] == lru.size * 2, f"{lru.ht[1]} != {lru.size * 2}"
+    print("1", lru)
+    assert lru[lru.size * 2] == "test * 2"
+    print("2", lru)
+    assert lru[lru.size] == "test"
+    lru_list = [(key, value) for key, value in lru]
     print(lru)
-    lru["bye"] = "Au revoir!"
+    print("h",[(i, h) for i,h in enumerate(lru.ht)])
+    print("nex",[(i, h) for i,h in enumerate(lru.nxt)])
+    print("prev", [(i, h) for i,h in enumerate(lru.prev)])
+    print("root", lru.root)
+    assert lru_list == [(lru.size, "test"), (lru.size * 2, "test * 2")], str(lru_list)
+
+    lru[lru.size - 1] = "blu"  # hash & mask = 15 should be at index 15
+    lru[(lru.size * 2) - 1] = "bla" # hash & mask = 15 (hash of 31) should be at index 2
+
+    assert lru.ht[2] == 31, f"{lru.ht[lru.size - 1]} != {31}"
+    assert lru[(lru.size * 2) - 1] == "bla"
+    assert lru[lru.size - 1] == "blu"
+
+    del lru[lru.size - 1]  # (lru.size * 2) - 1 should go at index 15
+    assert lru[(lru.size * 2) - 1] == "bla"
+    assert lru.ht[2] == 0
+    assert lru.ht[15] == 31
+
+    assert lru.ht[1] == lru.size * 2, f"{lru.ht[1]} != {lru.size * 2}"
+    assert lru[lru.size * 2] == "test * 2"
+    assert lru[lru.size] == "test"
+
+    # test lru
+    lru_list = [(key, value) for key, value in lru]
     print(lru)
-    lru["hello"]
-    print(lru)
-    lru["I"] = "Je"
-    print(lru)
-    lru["you"] = "Tu"
-    print(lru)
-    lru["have"] = "as"
-    print(lru)
+    assert lru_list == [(lru.size, "test"), (lru.size * 2, "test * 2"), ((lru.size * 2) - 1, "bla")], str(lru_list)
+
     del lru
+    print( "SUccesss")
+

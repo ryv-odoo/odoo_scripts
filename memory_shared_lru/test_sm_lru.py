@@ -1,5 +1,6 @@
 
 from multiprocessing import Process, Manager
+from random import random
 import traceback
 import sm_lru_fp
 import time
@@ -13,8 +14,8 @@ import traceback
 # https://stackoverflow.com/questions/45959222/share-an-evolving-dict-between-processes
 
 
-value = "a" * 5000
-key = "a" * 2000
+value = "a" * 1000
+key = "a" * 240
 
 # def a_method():
 #     return "blublu"
@@ -41,45 +42,62 @@ def test_correctness(dict_like):
     except:
         assert False, "Should raise KeyError"
 
-    for i in range(20):
+    for i in range(50000):
         # 16_777_216 bytes = 16 MB
-        dict_like[str(i)] = "a" * 1
-    assert len(dict_like) == 16, f"{len(dict_like)} instead of 2048"
+        dict_like[str(i)] = "a" * 100
+    if hasattr(dict_like, 'max_length'):
+        assert len(dict_like) == dict_like.max_length, f"{len(dict_like)} instead of {len(dict_like.max_length)}"
 
-    print(dict_like)
-
-    for i in range(20):
-        print("try with: ", str(i))
+    s = 0
+    for i in range(50000):
         if str(i) in dict_like:
+            s += 1
+            before_l = len(dict_like)
             del dict_like[str(i)]
-    print(dict_like)
+            if before_l == len(dict_like) - 1:
+                print(before_l, len(dict_like) - 1, " Whut ??")
+                raise AssertionError("Fail len")
+    if len(dict_like) != 0:
+        print(dict_like)
+        print("delete only:", s)
+        print("h",[(i,h) for i,h in enumerate(dict_like.ht) if h])
+        print("nex",[(i,h) for i,h in enumerate(dict_like.nxt) if h])
+        print("prev", [(i,h) for i,h in enumerate(dict_like.prev) if h])
+        print("root", dict_like.root)
+
     assert len(dict_like) == 0, f"{len(dict_like)} instead of 0"
 
 
 def test_concurrency(dict_like):
+    nb_write = 3000
+    nb_read = 40000
+    nb_process = 8
     def parrallele_method(dict_like):
-        time.sleep(0.2)
+        time.sleep(random())
         pid = os.getpid()
-        for i in range(20):
-            dict_like['u' + (str(pid) * i)] = str(pid) * 100
+        for i in range(nb_write):
+            dict_like[str(pid) + str(i)] = str(pid) * 20
+        for i in range(nb_read):
+            dict_like.get(str(pid) + str(i % nb_write))
 
-    nb = 100
-    processes = [Process(target=parrallele_method, args=(dict_like,)) for _ in range(nb)]
+    processes = [Process(target=parrallele_method, args=(dict_like,)) for _ in range(nb_process)]
     pids = []
+    start = time.time()
     for p in processes:
         p.start()
         pids.append(p.pid)
     for p in processes:
         p.join()
+    print(f'Finish concurrent in {((time.time() - start) * 1000):.3f} sec (for {nb_process} process making {nb_write} write and {nb_read} read)')
 
     simulate_normal = {}
     for pid in pids:
-        for i in range(20):
-            simulate_normal[str(pid) * i] = str(pid) * 100
+        for i in range(nb_write):
+            simulate_normal[str(pid) + str(i)] = str(pid) * 20
 
-    assert len(dict_like) == len(simulate_normal), f"Not a coorect len, {len(dict_like)} != {len(simulate_normal)}"
-    for pid in pids:
-        assert dict_like['u' + str(pid)] == str(pid) * 100, f"{dict_like[pid]} != {str(pid) * 100}"
+    assert len(dict_like) == min(len(simulate_normal), dict_like.max_length), f"Not a coorect len, {len(dict_like)} != {min(len(simulate_normal), dict_like.max_length)}"
+    # for pid in pids:
+    #     assert dict_like[str(pid) + "1"] == str(pid) * 20, f"{dict_like[pid]} != {str(pid) * 20}"
 
 obj_to_test = {
     # 'normal_dict': {},
@@ -96,37 +114,40 @@ obj_to_test = {
     # 'shared memory_lru v4 - lock - data in sm - 13% lru touch': sm_lru_v4.lru_shared(4096),
 }
 
-def f():
+def f(d):
 
     t = time.time()
-    for i in range(500):
+    for i in range(3000): # little more than the size of memory
         d[key + str(i)] = value
-        for j in range(i):
-            d[key + str(j)]
-    print('    %.6f ms/opp' % ((time.time() - t) * 1000.0 / (500 * 251)))
-
-    t = time.time()
-    for b in range(100):
-        d[key + str(i)] = value
-        for i in range(250):
-            d[key + str(i)] = value
-    print('    %.6f ms/write' % ((time.time() - t) * 1000.0 / (250 * 100)))
-
-    t = time.time()
-    for b in range(100):
-        for i in range(250):
+        for _ in range(100):
             d[key + str(i)]
-    print('    %.6f ms/read' % ((time.time() - t) * 1000.0 / (100 * 250)))
+    print('    %.6f ms/opp (100 * read for one write)' % ((time.time() - t) * 1000.0 / (3000 * 100)))
 
     t = time.time()
-    for i in range(250):
-        del d[key + str(i)]
-    print('    %.6f ms/delete' % ((time.time() - t) * 1000.0 / (100)))
+    for b in range(5000):
+        d[key + str(i)] = value
+    print('    %.6f ms/write' % ((time.time() - t) * 1000.0 / 5000))
+
+    t = time.time()
+    for b in range(3000, 5000):
+        d[key + str(i)]
+    print('    %.6f ms/read (hit only)' % ((time.time() - t) * 1000.0 / (2000)))
+
+    t = time.time()
+    for b in range(2500):
+        try:
+            d[key + str(i)]
+        except KeyError:
+            pass
+    print('    %.6f ms/read (miss only)' % ((time.time() - t) * 1000.0 / (2500)))
+    # t = time.time()
+    # for b in range(3000, 5000):
+    #     del d[key + str(i)]
+    # print('    %.6f ms/delete' % ((time.time() - t) * 1000.0 / (2000)))
 
 if __name__ == '__main__':
     for test, dict_like in obj_to_test.items():
         print(f"\n- {test}:")
-        d = dict_like
         try:
             test_correctness(dict_like)
         except AssertionError as e:
@@ -137,6 +158,7 @@ if __name__ == '__main__':
             print(traceback.format_exc())
         else:
             print("Success Correctness")
+
 
         # try:
         #     test_concurrency(dict_like)
@@ -149,6 +171,7 @@ if __name__ == '__main__':
         # else:
         #     print("Success concurrency")
 
+        # f(dict_like)
         # try:
         #     del dict_like
         # except Exception as e:
