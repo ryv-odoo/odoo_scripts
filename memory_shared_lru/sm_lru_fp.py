@@ -12,16 +12,17 @@ class lru_shared(object):
         assert size > 0 and (size & (size - 1) == 0), "LRU size must be an exponantiel of 2"
         self.size = size
         self.mask = size - 1
-        self.max_length = size // (3/2)  # should be always < than size. more it is big more there is hash conflict
+        # TODO: change into // 2
+        self.max_length = size // (3 / 2)  # should be always < than size. more it is big more there is hash conflict
         byte_size = size * 4096  # 4096 * 4096 = 16 MB by default
         try:
             self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
+            self.sm.buf[:] = b'\x00' * byte_size
         except FileExistsError:
             self.sm = SharedMemory(name="odoo_sm_lru_shared")
             if self.sm.size != byte_size:
                 raise MemoryError("The size of the shared memory doesn't match, exit")
 
-        self.sm.buf[:] = b'\x00' * byte_size
         data = [
             ('head', numpy.int32, (3,)),     # Contains root, length and free_len : 12 bytes
             ('ht', numpy.int64, (size,)),    # hash array: 8 bytes * size = 32768 bytes
@@ -32,7 +33,7 @@ class lru_shared(object):
         ]
         start = 0
         for (name, dtype, sz) in data:
-            end = start + dtype().nbytes * functools.reduce(lambda x,y: x*y, sz, 1)
+            end = start + dtype().nbytes * functools.reduce(lambda x, y: x * y, sz, 1)
             setattr(self, name, numpy.ndarray(sz, dtype=dtype, buffer=self.sm.buf[start:end]))
             start = end
 
@@ -150,7 +151,7 @@ class lru_shared(object):
         self.root = index
 
     def _del_index(self, index, key, prev, nxt):
-
+        # TODO: there is a bug here
         if prev == index:
             self.root = -1
         else:
@@ -226,7 +227,6 @@ class lru_shared(object):
         del self.data_idx
         del self.data_free
         del self.data
-        del self.sm.buf
         self.sm.close()
         self.sm.unlink()
 
@@ -284,18 +284,12 @@ if __name__=="__main__":
     lru[lru.size * 2] = "test * 2"  # hash & mask = 0, should be at index 2
 
     del lru[1]
+
     # now lru.size * 2 should be in the index 1
     assert lru.ht[1] == lru.size * 2, f"{lru.ht[1]} != {lru.size * 2}"
-    print("1", lru)
     assert lru[lru.size * 2] == "test * 2"
-    print("2", lru)
     assert lru[lru.size] == "test"
     lru_list = [(key, value) for key, value in lru]
-    print(lru)
-    print("h",[(i, h) for i,h in enumerate(lru.ht)])
-    print("nex",[(i, h) for i,h in enumerate(lru.nxt)])
-    print("prev", [(i, h) for i,h in enumerate(lru.prev)])
-    print("root", lru.root)
     assert lru_list == [(lru.size, "test"), (lru.size * 2, "test * 2")], str(lru_list)
 
     lru[lru.size - 1] = "blu"  # hash & mask = 15 should be at index 15
@@ -306,19 +300,20 @@ if __name__=="__main__":
     assert lru[lru.size - 1] == "blu"
 
     del lru[lru.size - 1]  # (lru.size * 2) - 1 should go at index 15
+
     assert lru[(lru.size * 2) - 1] == "bla"
     assert lru.ht[2] == 0
     assert lru.ht[15] == 31
-
     assert lru.ht[1] == lru.size * 2, f"{lru.ht[1]} != {lru.size * 2}"
     assert lru[lru.size * 2] == "test * 2"
     assert lru[lru.size] == "test"
 
     # test lru
     lru_list = [(key, value) for key, value in lru]
-    print(lru)
     assert lru_list == [(lru.size, "test"), (lru.size * 2, "test * 2"), ((lru.size * 2) - 1, "bla")], str(lru_list)
 
     del lru
-    print( "SUccesss")
+
+
+    print("Success")
 

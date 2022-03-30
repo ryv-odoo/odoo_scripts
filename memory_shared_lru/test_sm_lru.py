@@ -179,3 +179,5 @@ if __name__ == '__main__':
         #     print(traceback.format_exc())
         # else:
         #     print("Success delete")
+
+        del dict_like
