@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from fcntl import lockf, LOCK_EX, LOCK_SH, LOCK_UN, LOCK_NB
 import itertools
 from multiprocessing.shared_memory import SharedMemory
-from multiprocessing import Lock
 import numpy
 import marshal
 import functools
@@ -11,12 +10,12 @@ import functools
 
 class RWLock:
     def __init__(self, name) -> None:
-        self.f = open(name, 'r+')
+        self.f = open(name, 'rb+')
 
     def release(self):
         lockf(self.f, LOCK_UN)
 
-    def acquire_write_lazy(self):
+    def acquire_write_no_wait(self):
         cmd = LOCK_EX | LOCK_NB
         try:
             lockf(self.f, cmd)
@@ -27,14 +26,18 @@ class RWLock:
     @contextmanager
     def acquire_write(self):
         lockf(self.f, LOCK_EX)
-        yield
-        lockf(self.f, LOCK_UN)
+        try:
+            yield
+        finally:
+            self.release()
 
     @contextmanager
     def acquire_read(self):
         lockf(self.f, LOCK_SH)
-        yield
-        lockf(self.f, LOCK_UN)
+        try:
+            yield
+        finally:
+            self.release()
 
     def __del__(self):
         self.f.close()
@@ -44,8 +47,8 @@ class lru_shared(object):
         assert size > 0 and (size & (size - 1) == 0), "LRU size must be an exponantiel of 2"
         self.size = size
         self.mask = size - 1
-        self.max_length = size // 3  # should be always < than size. more it is big more there is hash conflict
-        byte_size = size * 4096  # 4096 * 4096 = 16 MB by default
+        self.max_length = size // 2  # should be always < than size. more it is big more there is hash conflict
+        byte_size = size * 4096      # 4096 * 4096 = 16 MB by default
         try:
             self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
             self.sm.buf[:] = b'\x00' * byte_size
@@ -72,7 +75,7 @@ class lru_shared(object):
         self.data_free[0] = [0, (byte_size) - end]
         self.lock = RWLock('/tmp/odoo_sm_lock.lock')
 
-        self.touch = 1        # used to touch the lru periodically, not 100% of the time
+        # self.touch = 1        # used to touch the lru periodically, not 100% of the time
         self.root = -1        # stored at end of self.prev
         self.length = 0       # stored at end of self.nxt
         self.free_len = 1     # size of self.data_free
@@ -167,12 +170,12 @@ class lru_shared(object):
         if root == index:
             return
 
-        # Pop me from neibourg if i am not new in the list
+        # Pop me from neighborhood if I am not a new node
         if prev is not None and nxt is not None:
             self.prev[nxt] = prev
             self.nxt[prev] = nxt
 
-        # Change the root to be my nxt and me to have as prev the last node
+        # Change the root to be my nxt, and I to have as prev the last node
         root_prev = self.prev[root]
         self.nxt[root_prev] = index
         self.nxt[index] = root
@@ -212,14 +215,11 @@ class lru_shared(object):
         for i in itertools.chain(range(index + 1, self.size), range(index)):
             if not self.ht[i]:
                 break
-            if (i > index and (self.ht[i] & self.mask) <= entry_empty) or (i < index and (self.ht[i] & self.mask) >= entry_empty):
+            if ((self.ht[i] & self.mask) <= entry_empty < i) or (i < entry_empty <= (self.ht[i] & self.mask)):
                 change_index(i, entry_empty)
                 entry_empty = i
 
     def __getitem__(self, key_):
-        # have_lock = self.lock.acquire(block=False)
-        # if not have_lock:  # Or block ?
-        #     raise KeyError("Lock cannot be acquire")
         hash_ = hash(key_)
         with self.lock.acquire_read():
             index, key, prev, nxt, val = self.lookup(key_, hash_)
@@ -227,7 +227,7 @@ class lru_shared(object):
             raise KeyError(f"{key_} doesn't not exist")
         # self.touch = (self.touch + 1) & 7
         # if not self.touch:   # lru touch every 8th reads: not sure about this optim?
-        if self.lock.acquire_write_lazy():
+        if self.lock.acquire_write_no_wait():
             try:
                 self.lru_touch(index, key, prev, nxt)
             finally:
@@ -346,6 +346,109 @@ if __name__=="__main__":
 
     del lru
 
+    # TEST DELETE
+    lru = lru_shared(16)
+    lru[lru.size] = "test0"  # index 0
+    lru[lru.size * 2] = "test1"  # index 1
+    lru[lru.size * 3] = "test2"  # index 2
+    lru[1] = "test3"  # index 3
+    lru[lru.size - 1]  = "test15"  # index 15
 
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+        (lru.size * 2, "test1"),
+        (lru.size, "test0"),
+    ], str(lru_list)
+
+    del lru[lru.size * 2]
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+        (lru.size, "test0"),
+    ], str(lru_list)
+
+    del lru[lru.size - 1]
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+        (lru.size, "test0"),
+    ], str(lru_list)
+
+    del lru[lru.size]
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+    ], str(lru_list)
+
+    del lru[1]
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size * 3, "test2"),
+    ], str(lru_list)
+
+    del lru[lru.size * 3]
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [], str(lru_list)
+    print("Success TEST DELETE")
+
+    # TEST POP LRU
+    lru[lru.size] = "test0"  # index 0
+    lru[lru.size * 2] = "test1"  # index 1
+    lru[lru.size * 3] = "test2"  # index 2
+    lru[1] = "test3"  # index 3
+    lru[lru.size - 1]  = "test15"  # index 15
+
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+        (lru.size * 2, "test1"),
+        (lru.size, "test0"),
+    ], str(lru_list)
+
+    lru.lru_pop()
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+        (lru.size * 2, "test1"),
+    ], str(lru_list)
+
+    lru.lru_pop()
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+        (lru.size * 3, "test2"),
+    ], str(lru_list)
+
+    lru.lru_pop()
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+        (1, "test3"),
+    ], str(lru_list)
+
+    lru.lru_pop()
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [
+        (lru.size - 1, "test15"),
+    ], str(lru_list)
+
+    lru.lru_pop()
+    lru_list = [(key, value) for key, value in lru]
+    assert lru_list == [], str(lru_list)
+    print("Success TEST POP LRU")
+
+    del lru
     print("Success")
 

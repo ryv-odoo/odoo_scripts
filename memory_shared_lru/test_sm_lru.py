@@ -1,5 +1,5 @@
 
-from multiprocessing import Process, Manager
+from multiprocessing import Pool, Process, Manager
 from multiprocessing.managers import BaseManager, DictProxy
 from random import random
 import traceback
@@ -24,7 +24,7 @@ key = "a" * 240
 #     return "blublu"
 
 def test_correctness(dict_like):
-
+    assert len(dict_like) == 0
     dict_like['key_test'] = "blabla"
     assert dict_like['key_test'] == "blabla", f"{dict_like['key_test']} != blabla"
     assert len(dict_like) == 1
@@ -47,7 +47,7 @@ def test_correctness(dict_like):
 
     for i in range(50000):
         # 16_777_216 bytes = 16 MB
-        dict_like[str(i)] = "a" * 100
+        dict_like[str(i)] = "VALUE: " + str(i)
     if hasattr(dict_like, 'max_length'):
         assert len(dict_like) == dict_like.max_length, f"{len(dict_like)} instead of {len(dict_like.max_length)}"
 
@@ -73,15 +73,15 @@ def test_correctness(dict_like):
 
 def test_concurrency(dict_like):
     nb_write = 500
-    nb_read = 10000
+    nb_read = 20
     nb_process = 10
     def parrallele_method(dict_like):
         time.sleep(random())
         pid = os.getpid()
         for i in range(nb_write):
             dict_like[str(pid) + str(i)] = str(pid) * 20
-        for i in range(nb_read):
-            dict_like.get(str(pid) + str(i % nb_write))
+            for i in range(nb_read):
+                dict_like.get(str(pid) + str(i % nb_write))
 
     processes = [Process(target=parrallele_method, args=(dict_like,)) for _ in range(nb_process)]
     pids = []
@@ -109,22 +109,32 @@ manager.start()
 
 obj_to_test = {
     # 'normal_dict': {},
-    'Manager().dict - no LRU': Manager().dict(),
-    'My Manager LruDict': manager.LruDict(10000),
-    'Redis': redis.Redis(),
-    'memcached': pylibmc.Client(["127.0.0.1"],
-        binary=True,
-        behaviors={"tcp_nodelay": True}
-    ),
-    'current: numpy + single large shared memory': sm_lru_fp.lru_shared(),
-    'NEW: numpy + single large shared memory': sm_lru_fp_rwlock.lru_shared(),
+    # 'Manager().dict - no LRU': Manager().dict(),
+    # 'My Manager LruDict': manager.LruDict(10000),
+    # 'Redis': redis.Redis(),
+    # 'memcached': pylibmc.Client(["127.0.0.1"],
+    #     binary=True,
+    #     behaviors={"tcp_nodelay": True}
+    # ),
+    # 'Normal Lock: numpy + single large shared memory': sm_lru_fp.lru_shared(),
+    'RWLock: numpy + single large shared memory': sm_lru_fp_rwlock.lru_shared(),
     # 'shared memory_lru v1 - 3 lists: key, prev, next': sm_lru_v1.lru_shared(4096),
     # 'shared memory_lru v2 - list of (key, prev, next)': sm_lru_v2.lru_shared(4096),
     # 'shared memory_lru v3 - list of (key, prev, next) - no LRU touch on __get__': sm_lru_v3.lru_shared(4096),
     # 'shared memory_lru v4 - lock - data in sm - 13% lru touch': sm_lru_v4.lru_shared(4096),
 }
+# s = "z" * 20
+# k = 'a' * 20
+# def f():
+#     t = time.time()
+#     for i in range(500):
+#         d[k + str(i)] = s
+#         for j in range(i, 0, -1):
+#             d[k + str(j)]
+#     print('    %.6f ms/opp' % ((time.time() - t) * 1000.0 / (500*251),))
+#     return True
 
-def f(d):
+def my_f(d):
 
     t = time.time()
     for i in range(3000): # little more than the size of memory
@@ -156,18 +166,26 @@ def f(d):
     # print('    %.6f ms/delete' % ((time.time() - t) * 1000.0 / (2000)))
 
 if __name__ == '__main__':
+    print(os.getenv("PYTHONHASHSEED"))
     for test, dict_like in obj_to_test.items():
         print(f"\n- {test}:")
-        # try:
-        #     test_correctness(dict_like)
-        # except AssertionError as e:
-        #     print(f"Fail test for {test}: {e}")
-        #     print(traceback.format_exc())
-        # except Exception as e:
-        #     print(f"Fail for {test}: {e}")
-        #     print(traceback.format_exc())
-        # else:
-        #     print("Success Correctness")
+        # print('shared memory: 8 processes')
+        # d = dict_like
+        # with Pool(8) as p:
+        #     p.starmap(f, [()]*8)
+        #     p.close()
+        #     p.join()
+        # del d
+        try:
+            test_correctness(dict_like)
+        except AssertionError as e:
+            print(f"Fail test for {test}: {e}")
+            print(traceback.format_exc())
+        except Exception as e:
+            print(f"Fail for {test}: {e}")
+            print(traceback.format_exc())
+        else:
+            print("Success Correctness")
 
         try:
             test_concurrency(dict_like)
