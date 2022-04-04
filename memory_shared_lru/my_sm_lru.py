@@ -6,24 +6,6 @@ from collections import OrderedDict
 from multiprocessing import Manager
 from multiprocessing.managers import BaseManager, DictProxy
 
-# class LruDict(OrderedDict):
-
-#     def __init__(self, size, *args, **kwargs):
-#         self.__max_size = size
-#         super().__init__(*args, **kwargs)
-
-#     def __setitem__(self, key, value, *args, **kwargs):
-#         print("SET", key, value, args, kwargs)
-#         super().__setitem__(key, value, *args, **kwargs)
-#         self.move_to_end(key)
-#         if len(self) > self.__max_size:
-#             self.popitem(last=False)
-
-#     def __getitem__(self, key, *args, **kwargs):
-#         print("GET", key, args, kwargs)
-#         self.move_to_end(key)  # FAIL
-#         return super().__getitem__(key, *args, **kwargs)
-
 class LruDict:
 
     def __init__(self, size, *args, **kwargs):

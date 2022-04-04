@@ -1,4 +1,6 @@
 #from multiprocessing.managers import SharedMemoryManager
+from contextlib import contextmanager
+from fcntl import lockf, LOCK_EX, LOCK_SH, LOCK_UN, LOCK_NB
 import itertools
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing import Lock
@@ -7,12 +9,42 @@ import marshal
 import functools
 
 
+class RWLock:
+    def __init__(self, name) -> None:
+        self.f = open(name, 'r+')
+
+    def release(self):
+        lockf(self.f, LOCK_UN)
+
+    def acquire_write_lazy(self):
+        cmd = LOCK_EX | LOCK_NB
+        try:
+            lockf(self.f, cmd)
+            return True
+        except OSError:
+            return False
+
+    @contextmanager
+    def acquire_write(self):
+        lockf(self.f, LOCK_EX)
+        yield
+        lockf(self.f, LOCK_UN)
+
+    @contextmanager
+    def acquire_read(self):
+        lockf(self.f, LOCK_SH)
+        yield
+        lockf(self.f, LOCK_UN)
+
+    def __del__(self):
+        self.f.close()
+
 class lru_shared(object):
     def __init__(self, size=4096):
         assert size > 0 and (size & (size - 1) == 0), "LRU size must be an exponantiel of 2"
         self.size = size
         self.mask = size - 1
-        self.max_length = size // 2  # should be always < than size. more it is big more there is hash conflict
+        self.max_length = size // 3  # should be always < than size. more it is big more there is hash conflict
         byte_size = size * 4096  # 4096 * 4096 = 16 MB by default
         try:
             self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
@@ -38,7 +70,7 @@ class lru_shared(object):
 
         self.data = self.sm.buf[end: byte_size]
         self.data_free[0] = [0, (byte_size) - end]
-        self.lock = Lock()
+        self.lock = RWLock('/tmp/odoo_sm_lock.lock')
 
         self.touch = 1        # used to touch the lru periodically, not 100% of the time
         self.root = -1        # stored at end of self.prev
@@ -189,13 +221,13 @@ class lru_shared(object):
         # if not have_lock:  # Or block ?
         #     raise KeyError("Lock cannot be acquire")
         hash_ = hash(key_)
-        with self.lock:
+        with self.lock.acquire_read():
             index, key, prev, nxt, val = self.lookup(key_, hash_)
         if val is None:
             raise KeyError(f"{key_} doesn't not exist")
         # self.touch = (self.touch + 1) & 7
         # if not self.touch:   # lru touch every 8th reads: not sure about this optim?
-        if self.lock.acquire(block=False):
+        if self.lock.acquire_write_lazy():
             try:
                 self.lru_touch(index, key, prev, nxt)
             finally:
@@ -206,7 +238,7 @@ class lru_shared(object):
         hash_ = hash(key)
         if not hash_:
             raise KeyError(f"hash_ of key is falsy for {key} ({hash_}) {value}, Not supported for now")
-        with self.lock:
+        with self.lock.acquire_write():
             index, _key, _prev, _nxt, val = self.lookup(key, hash_)
             if val is None:
                 self.length += 1
@@ -241,37 +273,38 @@ class lru_shared(object):
 
     def __delitem__(self, key):
         hash_ = hash(key)
-        with self.lock:
+        with self.lock.acquire_write():
             index, key, prev, nxt, val = self.lookup(key, hash_)
             if val is None:
                 KeyError(f"{key} doesn't not exist, cannot delete it")
             self._del_index(index, key, prev, nxt)
 
     def __iter__(self):
-        if self.root == -1:
-            return iter(())
-        node_index = self.root
-        while True:
-            _hash_key, _prev, nxt = self._get_entry(node_index)
-            data = self.data_get(node_index)
-            yield data[0], data[1]
-            node_index = nxt
-            if node_index == self.root:
-                break
+        with self.lock.acquire_read():
+            if self.root == -1:
+                return iter(())
+            node_index = self.root
+            while True:
+                _hash_key, _prev, nxt = self._get_entry(node_index)
+                data = self.data_get(node_index)
+                yield data[0], data[1]
+                node_index = nxt
+                if node_index == self.root:
+                    break
 
     def __str__(self):
-        if self.root == -1:
-            return '[]'
-
-        node_index = self.root
-        result = []
-        while True:
-            _hash_key, _prev, nxt = self._get_entry(node_index)
-            data = self.data_get(node_index)
-            result.append(f'{data[0]} (hash & mask: {_hash_key & self.mask}, index: {node_index}, hash: {_hash_key:+}): {data[1]}')
-            node_index = nxt
-            if node_index == self.root:
-                return f'hashtable size: {self.size}, mask: {self.mask}, len: {str(self.length)}\n' + '\n'.join(result)
+        with self.lock.acquire_read():
+            if self.root == -1:
+                return '[]'
+            node_index = self.root
+            result = []
+            while True:
+                _hash_key, _prev, nxt = self._get_entry(node_index)
+                data = self.data_get(node_index)
+                result.append(f'{data[0]} (hash & mask: {_hash_key & self.mask}, index: {node_index}, hash: {_hash_key:+}): {data[1]}')
+                node_index = nxt
+                if node_index == self.root:
+                    return f'hashtable size: {self.size}, mask: {self.mask}, len: {str(self.length)}\n' + '\n'.join(result)
 
 
 if __name__=="__main__":

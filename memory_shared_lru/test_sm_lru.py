@@ -4,6 +4,7 @@ from multiprocessing.managers import BaseManager, DictProxy
 from random import random
 import traceback
 import sm_lru_fp
+import sm_lru_fp_rwlock
 import time
 import functools
 import redis
@@ -71,9 +72,9 @@ def test_correctness(dict_like):
 
 
 def test_concurrency(dict_like):
-    nb_write = 3000
-    nb_read = 30000
-    nb_process = 8
+    nb_write = 500
+    nb_read = 10000
+    nb_process = 10
     def parrallele_method(dict_like):
         time.sleep(random())
         pid = os.getpid()
@@ -116,6 +117,7 @@ obj_to_test = {
         behaviors={"tcp_nodelay": True}
     ),
     'current: numpy + single large shared memory': sm_lru_fp.lru_shared(),
+    'NEW: numpy + single large shared memory': sm_lru_fp_rwlock.lru_shared(),
     # 'shared memory_lru v1 - 3 lists: key, prev, next': sm_lru_v1.lru_shared(4096),
     # 'shared memory_lru v2 - list of (key, prev, next)': sm_lru_v2.lru_shared(4096),
     # 'shared memory_lru v3 - list of (key, prev, next) - no LRU touch on __get__': sm_lru_v3.lru_shared(4096),
