@@ -10,7 +10,7 @@ import functools
 
 class RWLock:
     def __init__(self, name) -> None:
-        self.f = open(name, 'rb+')
+        self.f = open(name, 'wb+')
 
     def release(self):
         lockf(self.f, LOCK_UN)
@@ -55,7 +55,10 @@ class lru_shared(object):
         except FileExistsError:
             self.sm = SharedMemory(name="odoo_sm_lru_shared")
             if self.sm.size != byte_size:
-                raise MemoryError("The size of the shared memory doesn't match, exit")
+                self.sm.unlink()
+                self.sm = SharedMemory(name="odoo_sm_lru_shared", size=byte_size, create=True)
+                self.sm.buf[:] = b'\x00' * byte_size
+                # raise MemoryError("The size of the shared memory doesn't match, delete it and raise")
 
         data = [
             ('head', numpy.int32, (3,)),     # Contains root, length and free_len : 12 bytes
@@ -211,13 +214,30 @@ class lru_shared(object):
             if self.root == old_index:
                 self.root = new_index
 
-        entry_empty = index
-        for i in itertools.chain(range(index + 1, self.size), range(index)):
-            if not self.ht[i]:
+        # Si la distance entre l'index et le hash & mask =
+        # (hash & mask) - index
+
+        index_empty = index
+        print("HERE")
+        for i in range(index + 1, index + self.size):
+            i_mask = i & self.mask  # from index -> self.size -> 0 -> index - 1
+            if not self.ht[i_mask]:
                 break
-            if ((self.ht[i] & self.mask) <= entry_empty < i) or (i < entry_empty <= (self.ht[i] & self.mask)):
-                change_index(i, entry_empty)
-                entry_empty = i
+            ht_mask = self.ht[i_mask] & self.mask
+
+            distance_i = i_mask - ht_mask if i_mask >= ht_mask else self.size - ht_mask + i_mask
+            distance_new = index_empty - ht_mask if index_empty >= ht_mask else self.size - ht_mask + index_empty
+            # distance error of i,
+            # - if 0 then he is a the correct location don't move
+            # - if < than distance_new = not suitable location
+            # else compress
+            print(f"{index_empty=}, {i=}, {i_mask=}, {ht_mask=}, {distance_i=}, {distance_new=}, {0 < distance_i and distance_i > distance_new}")
+
+            if 0 < distance_i and distance_i > distance_new:
+                change_index(i_mask, index_empty)
+                index_empty = i_mask
+        else:
+            raise MemoryError("The hashtable seems full, it doesn't make any sense")
 
     def __getitem__(self, key_):
         hash_ = hash(key_)
@@ -262,7 +282,8 @@ class lru_shared(object):
         self.sm.unlink()
 
     def __len__(self):
-        return self.length
+        with self.lock.acquire_read():
+            return self.length
 
     def __contains__(self, key):
         try:
@@ -274,17 +295,17 @@ class lru_shared(object):
     def __delitem__(self, key):
         hash_ = hash(key)
         with self.lock.acquire_write():
-            index, key, prev, nxt, val = self.lookup(key, hash_)
+            index, _key, prev, nxt, val = self.lookup(key, hash_)
             if val is None:
-                KeyError(f"{key} doesn't not exist, cannot delete it")
-            self._del_index(index, key, prev, nxt)
+                raise KeyError(f"{key} doesn't not exist, cannot delete it")
+            self._del_index(index, _key, prev, nxt)
 
     def __iter__(self):
         with self.lock.acquire_read():
             if self.root == -1:
                 return iter(())
             node_index = self.root
-            while True:
+            for _ in range(self.size):
                 _hash_key, _prev, nxt = self._get_entry(node_index)
                 data = self.data_get(node_index)
                 yield data[0], data[1]
@@ -298,14 +319,15 @@ class lru_shared(object):
                 return '[]'
             node_index = self.root
             result = []
-            while True:
+            for _ in range(self.size):
                 _hash_key, _prev, nxt = self._get_entry(node_index)
                 data = self.data_get(node_index)
                 result.append(f'{data[0]} (hash & mask: {_hash_key & self.mask}, index: {node_index}, hash: {_hash_key:+}): {data[1]}')
                 node_index = nxt
                 if node_index == self.root:
                     return f'hashtable size: {self.size}, mask: {self.mask}, len: {str(self.length)}\n' + '\n'.join(result)
-
+            else:
+                raise MemoryError(f"Infinite loop detected in the Linked list : \n{self.root=}\n{self.prev=}\n{self.nxt=}")
 
 if __name__=="__main__":
     lru = lru_shared(16)
@@ -450,5 +472,48 @@ if __name__=="__main__":
     print("Success TEST POP LRU")
 
     del lru
+
+    size_lru = 16
+    keys = {
+        size_lru - 1: "Vi 15",
+        (size_lru * 2) - 1: "Vi 0",
+        1: "Vi 1",
+        (size_lru * 3) - 1: "Vi 2",
+        size_lru - 2: "Vi 14",
+        (size_lru * 2) - 2: "Vi 3",
+        (size_lru * 3) - 2: "Vi 4"
+    }
+
+    def prepare_lru():
+        lru = lru_shared(size_lru)
+        for key, v in keys.items():
+            lru[key] = v
+
+        for key in keys:
+            assert lru[key]
+
+        assert lru.ht[15] == lru.size - 1
+        assert lru.ht[0] == (lru.size * 2) - 1
+        assert lru.ht[1] == 1
+        assert lru.ht[2] == (lru.size * 3) - 1
+        assert lru.ht[14] == lru.size - 2
+        assert lru.ht[3] == (lru.size * 2) - 2
+        assert lru.ht[4] == (lru.size * 3) - 2
+        assert len(lru) == len(keys)
+        return lru
+
+    for keys_possibility in itertools.permutations(keys):
+        lru = prepare_lru()
+
+        for i, key in enumerate(keys_possibility):
+            print(lru)
+            del lru[key]
+            for k in keys_possibility[i+1:]:
+                assert lru.get(k), f"{k} should be still accessable after delete {key}: \n{lru}"
+        assert len(lru) == 0
+        del lru
+        print("One success")
+
+    print("Success new")
     print("Success")
 
