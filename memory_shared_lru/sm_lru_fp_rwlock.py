@@ -188,7 +188,6 @@ class lru_shared(object):
         self.root = index
 
     def _del_index(self, index, key, prev, nxt):
-        # TODO: there is a bug here
         if prev == index:
             self.root = -1
         else:
@@ -205,6 +204,8 @@ class lru_shared(object):
         # an index lower or equal to the position we delete (conflicts handling).
         def change_index(old_index, new_index):
             key_i, prev_i, next_i = self._get_entry(old_index)
+            if self.nxt[old_index] == old_index:  # if I am alone in the hashtable
+                prev_i, next_i = new_index, new_index
             self.nxt[prev_i] = new_index
             self.prev[next_i] = new_index
             self._set_entry(new_index, key_i, prev_i, next_i)
@@ -214,11 +215,7 @@ class lru_shared(object):
             if self.root == old_index:
                 self.root = new_index
 
-        # Si la distance entre l'index et le hash & mask =
-        # (hash & mask) - index
-
         index_empty = index
-        print("HERE")
         for i in range(index + 1, index + self.size):
             i_mask = i & self.mask  # from index -> self.size -> 0 -> index - 1
             if not self.ht[i_mask]:
@@ -231,8 +228,6 @@ class lru_shared(object):
             # - if 0 then he is a the correct location don't move
             # - if < than distance_new = not suitable location
             # else compress
-            print(f"{index_empty=}, {i=}, {i_mask=}, {ht_mask=}, {distance_i=}, {distance_new=}, {0 < distance_i and distance_i > distance_new}")
-
             if 0 < distance_i and distance_i > distance_new:
                 change_index(i_mask, index_empty)
                 index_empty = i_mask
@@ -270,14 +265,14 @@ class lru_shared(object):
             while self.length > self.max_length:
                 self.lru_pop()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        del self
+
     def __del__(self):
-        del self.head
-        del self.ht
-        del self.prev
-        del self.nxt
-        del self.data_idx
-        del self.data_free
-        del self.data
+        del self.head, self.ht, self.prev, self.nxt, self.data_idx, self.data_free, self.data, self.lock
         self.sm.close()
         self.sm.unlink()
 
@@ -326,8 +321,7 @@ class lru_shared(object):
                 node_index = nxt
                 if node_index == self.root:
                     return f'hashtable size: {self.size}, mask: {self.mask}, len: {str(self.length)}\n' + '\n'.join(result)
-            else:
-                raise MemoryError(f"Infinite loop detected in the Linked list : \n{self.root=}\n{self.prev=}\n{self.nxt=}")
+            raise MemoryError(f"Infinite loop detected in the Linked list : \n{self.root=}\n{self.prev=}\n{self.nxt=}")
 
 if __name__=="__main__":
     lru = lru_shared(16)
@@ -506,13 +500,11 @@ if __name__=="__main__":
         lru = prepare_lru()
 
         for i, key in enumerate(keys_possibility):
-            print(lru)
             del lru[key]
             for k in keys_possibility[i+1:]:
                 assert lru.get(k), f"{k} should be still accessable after delete {key}: \n{lru}"
         assert len(lru) == 0
         del lru
-        print("One success")
 
     print("Success new")
     print("Success")
