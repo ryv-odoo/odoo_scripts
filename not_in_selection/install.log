@@ -1,0 +1,440 @@
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (1,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (1,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (2,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (2,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (3,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (3,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (4,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (4,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (5,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (5,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (6,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (6,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (7,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (7,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (8,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (8,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (9,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (9,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (10,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (10,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (11,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (11,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (12,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (12,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (13,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (13,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (14,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (14,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (15,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (15,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (16,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (16,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (17,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (17,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (18,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (18,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (19,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (19,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (20,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (20,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (21,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (21,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (22,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (22,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (23,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (23,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (24,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (24,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (25,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (25,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (26,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (26,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (27,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (27,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (28,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (28,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (29,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (29,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (30,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (30,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (31,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (31,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (32,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (32,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (33,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (33,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (34,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (34,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (35,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (35,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (36,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (36,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (37,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (37,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (38,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (38,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of snailmail.letter() / state: before (("snailmail_letter"."state" not in %s) OR "snailmail_letter"."state" IS NULL) | [('sent', 'canceled')] -> after ("snailmail_letter"."state" in %s) | [('pending', 'error')]
+<osv.Query: 'SELECT "snailmail_letter".id FROM "snailmail_letter" WHERE (("snailmail_letter"."state" in %s) AND ("snailmail_letter"."partner_id" in %s))' with params: [('pending', 'error'), (42,)]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (39,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (39,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (40,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (40,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (41,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (41,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (42,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (42,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (43,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (43,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (44,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (44,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (45,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (45,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (46,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (46,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (47,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (47,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (48,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (48,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (49,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (49,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (50,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of mail.notification() / notification_status: before (("mail_notification"."notification_status" not in %s) OR "mail_notification"."notification_status" IS NULL) | [('sent', 'canceled')] -> after (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL) | [('ready', 'bounce', 'exception')]
+<osv.Query: 'SELECT "mail_notification".id FROM "mail_notification" WHERE ((("mail_notification"."notification_type" = %s) AND ("mail_notification"."mail_mail_id" in %s)) AND (("mail_notification"."notification_status" in %s) OR "mail_notification"."notification_status" IS NULL))' with params: ['email', (50,), ('ready', 'bounce', 'exception')]>
+
+ --------------------------------
+Inverse selection of account.move(7,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE ((((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s)) AND ("account_move"."date" <= %s))' with params: [2, '7', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt'), '2018-09-17']>
+
+ --------------------------------
+Inverse selection of account.move(7,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE (((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s))' with params: [2, '7', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]>
+
+ --------------------------------
+Inverse selection of account.move(7,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE ((((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s)) AND ("account_move"."date" <= %s))' with params: [2, '7', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt'), '2018-09-17']>
+
+ --------------------------------
+Inverse selection of account.move(7,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE (((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s))' with params: [2, '7', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]>
+
+ --------------------------------
+Inverse selection of account.move(1,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE ((((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s)) AND ("account_move"."date" <= %s))' with params: [1, '1', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt'), '2022-05-01']>
+
+ --------------------------------
+Inverse selection of account.move(1,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE (((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s))' with params: [1, '1', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]>
+
+ --------------------------------
+Inverse selection of account.move(1,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE ((((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s)) AND ("account_move"."date" <= %s))' with params: [1, '1', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt'), '2022-05-01']>
+
+ --------------------------------
+Inverse selection of account.move(1,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE (((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s))' with params: [1, '1', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]>
+
+ --------------------------------
+Inverse selection of account.move(2,) / move_type: before (("account_move"."move_type" not in %s) OR "account_move"."move_type" IS NULL) | [('out_refund', 'in_refund')] -> after ("account_move"."move_type" in %s) | [('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt')]
+<osv.Query: 'SELECT "account_move".id FROM "account_move" WHERE ((((("account_move"."journal_id" = %s) AND (("account_move"."id" != %s) OR "account_move"."id" IS NULL)) AND (("account_move"."name" not in %s) AND "account_move"."name" IS NOT NULL)) AND ("account_move"."move_type" in %s)) AND ("account_move"."date" <= %s))' with params: [1, '2', ('/', ''), ('entry', 'out_invoice', 'in_invoice', 'out_receipt', 'in_receipt'), '2022-05-08']>
+
+ --------------------------------

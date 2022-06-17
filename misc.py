@@ -144,7 +144,7 @@ def psql_vacuum_analyse(CONNECTION_PARAMS, table_name):
     with psycopg2.connect(CONNECTION_PARAMS) as conn:
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # Vaccum need to be done outside transaction block
         with conn.cursor() as cur:
-            cur.execute(f"VACUUM ANALYZE {table_name}")
+            cur.execute(f"VACUUM ANALYZE {table_name if table_name else ''}")
 
 def psql_explain(cur, query):
     cur.execute("EXPLAIN ANALYZE " + query)
