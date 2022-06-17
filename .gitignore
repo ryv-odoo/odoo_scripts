@@ -14,5 +14,6 @@
 
 !res_exists_perf/*.log
 !memory_shared_lru/*.py
+!memory_shared_lru/*.md
 !not_in_selection/*.py
 !not_in_selection/*.log
