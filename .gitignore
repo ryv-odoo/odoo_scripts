@@ -10,6 +10,7 @@
 !batch_update_perf.py
 !dependencies.py
 !test_indexes.py
+!test_count.py
 !perf_httpapocalypse.py
 
 !res_exists_perf/*.log
