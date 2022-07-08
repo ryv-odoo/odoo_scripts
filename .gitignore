@@ -10,6 +10,7 @@
 !batch_update_perf.py
 !dependencies.py
 !test_indexes.py
+!test_count.py
 !perf_httpapocalypse.py
 !test_website_perf.py
 
