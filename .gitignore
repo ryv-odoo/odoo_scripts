@@ -11,6 +11,7 @@
 !dependencies.py
 !test_indexes.py
 !perf_httpapocalypse.py
+!test_website_perf.py
 
 !res_exists_perf/*.log
 !memory_shared_lru/*.py
