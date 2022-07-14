@@ -6,6 +6,7 @@
 !misc.py
 
 !exists_perf.py
+!exists_issue.py
 !bulk_insert.py
 !batch_update_perf.py
 !dependencies.py
