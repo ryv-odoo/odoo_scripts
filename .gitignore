@@ -14,6 +14,8 @@
 !test_count.py
 !perf_httpapocalypse.py
 !test_website_perf.py
+!psql_log.md
+!exists_smarty.py
 
 !res_exists_perf/*.log
 !memory_shared_lru/*.py
