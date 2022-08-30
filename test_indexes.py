@@ -87,10 +87,17 @@ def tests(conn):
     with conn.cursor() as cur:
         print("Normal ilike:")
         query_normal = f"""
-        SELECT 1 FROM {TABLE} WHERE name ILIKE '%bla25%'
+        SELECT 1 FROM {TABLE} WHERE name ILIKE '%a8a6%'
         """
         psql_explain_analyse(cur, query_normal)  # warmup
         print(psql_explain_analyse(cur, query_normal))
+
+        print("\nO_Unaccent ilike (Immutable):")
+        query_unaccent = f"""
+        SELECT 1 FROM {TABLE} WHERE o_unaccent(name) ILIKE o_unaccent('%a8a6%')
+        """
+        psql_explain_analyse(cur, query_unaccent)  # warmup
+        print(psql_explain_analyse(cur, query_unaccent))
 
         print("\nUnaccent ilike:")
         query_unaccent = f"""
@@ -109,7 +116,7 @@ def tests(conn):
 print()
 print("WITHOUT INDEX")
 with psycopg2.connect(CONNECTION_PARAMS) as conn:
-    timed_call(tests, conn, suffix='without index')
+    tests(conn)
 
 with psycopg2.connect(CONNECTION_PARAMS) as conn:
     timed_call(create_gin_index, conn)
@@ -118,7 +125,7 @@ timed_call(psql_vacuum_analyse, CONNECTION_PARAMS, TABLE)
 print()
 print("WITH GIN INDEX")
 with psycopg2.connect(CONNECTION_PARAMS) as conn:
-    timed_call(tests, conn, suffix='with index')
+    tests(conn)
 
 with psycopg2.connect(CONNECTION_PARAMS) as conn:
     timed_call(create_unaccent_gin_index, conn)
@@ -127,7 +134,7 @@ timed_call(psql_vacuum_analyse, CONNECTION_PARAMS, TABLE)
 print()
 print("WITH Unaccent GIN INDEX")
 with psycopg2.connect(CONNECTION_PARAMS) as conn:
-    timed_call(tests, conn, suffix='with Unaccent index')
+    tests(conn)
 # COALESCE("ir_translation"."value", "model"."field") ilike '%pattern%'
 
 # ("ir_translation"."value" IS NOT NULL and "ir_translation"."value" ilike '%pattern%') OR ("ir_translation"."value" IS NULL and "model"."field" ilike '%pattern%')
