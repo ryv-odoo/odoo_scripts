@@ -24,3 +24,4 @@
 !not_in_selection/*.py
 !not_in_selection/*.log
 !expression_tests.sql
+!aggregate_perf.py

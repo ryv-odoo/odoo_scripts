@@ -35,11 +35,11 @@ def x_bests(values, x):
 
 def timed_call(method, *method_args, print_res=True, suffix=''):
     start = time.time_ns()
-    method(*method_args)
-    delta = (time.time_ns() - start) / 1_000_000
+    res = method(*method_args)
+    ms_delta = (time.time_ns() - start) / 1_000_000
     if print_res:
-        print(f"'{method.__name__}' {suffix}: {delta:.3f} ms")
-    return delta
+        print(f"'{method.__name__}' {suffix}: {ms_delta:.3f} ms")
+    return res, ms_delta
 
 # -------------- Odoo method/class
 def unique(it):
