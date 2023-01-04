@@ -38,7 +38,7 @@ RESULT_FILE = 'results_odoo_v13.obj' if ODOO_V13 else 'results_odoo_master.obj'
 
 def get_params_to_query(where, limit, order):
     return f"""
-    {'' if not where else f'AND {where}'}
+    {'' if not where else f'{where}'}
     {'' if not order else 'ORDER BY ' + str(order)}
     {'' if not limit else 'LIMIT ' + str(limit)}
     """
@@ -70,6 +70,13 @@ def test_not_in_select_null(where, limit, order):
     model_a.id NOT IN (
         SELECT model_a_id FROM model_a_model_b_rel WHERE model_a_id IS NOT NULL
     )""" + get_params_to_query(where, limit, order)
+
+def test_not_join_select_null(where, limit, order):
+    return """
+    SELECT id FROM model_a 
+    LEFT JOIN model_a_model_b_rel ON (model_a_id = model_a.id)
+    WHERE model_a_id IS NULL
+    """ + get_params_to_query(where, limit, order)
 
 def test_not_in_select(where, limit, order):
     return """
@@ -358,20 +365,20 @@ size_table_2 = {
     'Very small': 100,
     'Small': 2_000,
     'Normal': 50_000,
-    # 'Big': 1_000_000,
+    'Big': 1_000_000,
     # 'Very_big': 10_000_000,
 }
 size_rel_factor = {
     'Almost not connected': 1 / 5,
-    'Few connection': 1,
+    # 'Few connection': 1,
     'Connected': 5,
-    'Highly connected': 20,
+    # 'Highly connected': 20,
 }
 concentration = {
     'None': None,
     # 'Few': 50,
     'A Lot': 20,
-    'Very highly Concentrate': 2,
+    # 'Very highly Concentrate': 2,
 }
 
 TESTS: list[TestCase] = []
@@ -384,27 +391,29 @@ for st_str_t1, st_size_t1 in size_table_1.items():
 
 # Param by test (if you change it, the cache file should be deleted)
 query_methods = [
-    test_in_select_null,
+    # test_in_select_null,
     # test_in_select,
-    test_exists,
-    test_not_in_select_null,
+    # test_exists,
+    # test_not_in_select_null,
+    test_not_join_select_null,
     # test_not_in_select,
     test_not_exists,
 ]
 limit_to_test = [
-    1,
-    80,
+    # 1,
+    # 80,
     None
 ]
 order_to_test = [
-    "id DESC",
+    # "id DESC",
     "id",
     # None
 ]
 where_to_test = [
     None,
     # "create_uid < 5",  # half of data
-    "create_uid < 2",  # 2/10 of data
+    "AND create_uid < 2",  # 2/10 of data
+    "OR create_uid < 2",  # 2/10 of data
 ]
 
 def launch_tests(file_to_save):
@@ -492,7 +501,7 @@ def interpreted_result(file):
         n1 = NormalDist.from_samples(values_1)
         n2 = NormalDist.from_samples(values_2)
         p = n1.overlap(n2)
-        return p < 0.01 and fmean(values_1) < fmean(values_2)
+        return p < 0.20 and fmean(values_1) < fmean(values_2)
 
     by_methods = defaultdict(list)
     faster_dict = defaultdict(list)
@@ -543,18 +552,22 @@ def interpreted_result(file):
                 # Print when the exist is slower than the actual query
                 # test_in_select_null < test_exists
                 all_compare += 1
-                current_key = ('test_in_select_null', limit, order, where)
-                exists_key = ('test_exists', limit, order, where)
-                compare_two_test(current_key, exists_key)
+                # current_key = ('test_in_select_null', limit, order, where)
+                # exists_key = ('test_exists', limit, order, where)
+                # compare_two_test(current_key, exists_key)
 
                 # test_not_in_select_null < test_not_exists
-                not_current_key = ('test_not_in_select_null', limit, order, where)
-                not_exists_key = ('test_not_exists', limit, order, where)
+                not_current_key = ('test_not_exists', limit, order, where)
+                not_exists_key = ('test_not_join_select_null', limit, order, where)
                 compare_two_test(not_current_key, not_exists_key)
 
-                # if means_std(res_time[not_exists_key])[0] > 0.35:
-                #     print(test, not_exists_key, means_std(res_time[not_exists_key]))
-                #     print(res_explain[not_exists_key])
+                # print(test, not_exists_key, means_std(res_time[not_exists_key]))
+                # print(res_explain[not_current_key])
+                # print(res_explain[not_exists_key])
+
+                if means_std(res_time[not_exists_key])[0] > 0.35:
+                    print(test, not_exists_key, means_std(res_time[not_exists_key]))
+                    print(res_explain[not_exists_key])
 
         # print(" ------------------------------------------------------ ")
         # for key, values in faster_dict.items():
@@ -599,15 +612,15 @@ def interpreted_result(file):
             print()
 
             # Explain compare
-            # c_best = combination[0]
-            # print(f"Explain for the best win ({str(c_best[0].size_t1):>8} <-> {str(c_best[0].size_rel):>10} ({str(c_best[0].concentration):>4}) <-> {str(c_best[0].size_t2):>8}, {str(c_best[1]):>35}):")
-            # print(f"{BOLD}{methods[0]}{RESET} in {avg_str_mean(c_best[2].mean1):>7} msec:")
-            # res_explain = all_result[c_best[0]][1]
-            # print((methods[0],) + c_best[1])
-            # print(res_explain[(methods[0],) + c_best[1]])
-            # print()
-            # print(f"{BOLD}{methods[1]}{RESET} in : {avg_str_mean(c_best[2].mean2):>7} msec:")
-            # print(res_explain[(methods[1],) + c_best[1]])
+            c_best = combination[0]
+            print(f"Explain for the best win ({str(c_best[0].size_t1):>8} <-> {str(c_best[0].size_rel):>10} ({str(c_best[0].concentration):>4}) <-> {str(c_best[0].size_t2):>8}, {str(c_best[1]):>35}):")
+            print(f"{BOLD}{methods[0]}{RESET} in {avg_str_mean(c_best[2].mean1):>7} msec:")
+            res_explain = all_result[c_best[0]][1]
+            print((methods[0],) + c_best[1])
+            print(res_explain[(methods[0],) + c_best[1]])
+            print()
+            print(f"{BOLD}{methods[1]}{RESET} in : {avg_str_mean(c_best[2].mean2):>7} msec:")
+            print(res_explain[(methods[1],) + c_best[1]])
 
         print("------------------------")
         print(f"There are {len(each_timeout)} cases where both methods has failed (test_in_select_null vs test_exists OR test_not_in_select_null vs test_not_exists)")
