@@ -1,20 +1,9 @@
-
 import sys
 import os
 import ast
 from typing import Any
 
 include_type = '.py'
-
-
-# groupby at 1
-# aggregates at 2
-all_args_in_order = [
-    'domain',
-    'groupby',
-    'aggregates',
-    ''
-]
 
 empty_list = ast.parse("[]").body[0].value
 
@@ -34,12 +23,22 @@ class AbstractVisitor(ast.NodeVisitor):
                 raise ValueError("Error")
         return '\n'.join(all_lines)
 
-
     def add_change(self, old_node: ast.AST, new_node: ast.AST | str):
+        position = (old_node.lineno, old_node.end_lineno, old_node.col_offset, old_node.end_col_offset)
         if isinstance(new_node, str):
-            self.change_todo.append(((old_node.lineno, old_node.end_lineno, old_node.col_offset, old_node.end_col_offset), new_node))
-            return
-        self.change_todo.append(((old_node.lineno, old_node.end_lineno, old_node.col_offset, old_node.end_col_offset), ast.unparse(new_node)))
+            self.change_todo.append((position, new_node))
+        else:
+            self.change_todo.append((position, ast.unparse(new_node)))
+
+
+class VisitorToPrivateReadGroup(AbstractVisitor):
+
+    def post_process(self, all_code:str) -> str:
+        all_lines = all_code.split('\n')
+        for i, line in enumerate(all_lines):
+            if 'super(' not in line:
+                all_lines[i] = line.replace('.read_group(', '._read_group(')
+        return '\n'.join(all_lines)
 
 
 class VisitorInverseGroupbyFields(AbstractVisitor):
@@ -85,14 +84,11 @@ class VisitorRenameKeywords(AbstractVisitor):
 
 class VisitorRemoveLazy(AbstractVisitor):
 
-    def __init__(self) -> None:
-        super().__init__()
-
     def post_process(self, all_code):
-        # remove extra comma ',' and extra line if possible 
+        # remove extra comma ',' and extra line if possible
         all_code = super().post_process(all_code)
         all_lines = all_code.split('\n')
-        for (lineno, line_end, col_offset, end_col_offset), new_substring in sorted(self.change_todo, reverse=True):
+        for (lineno, __, col_offset, __), __ in sorted(self.change_todo, reverse=True):
             comma_find = False
             line = all_lines[lineno - 1]
             remaining = line[col_offset:]
@@ -139,18 +135,24 @@ class VisitorAggregatesSpec(AbstractVisitor):
                 groupby_values = keywords_by_key['groupby']
 
             if aggregate_values:
+                aggregates = None
                 try:
                     aggregates = ast.literal_eval(ast.unparse(aggregate_values))
-                    if not isinstance(aggregates, list):
+                    if not isinstance(aggregates, (list, tuple)):
                         raise ValueError(f"{aggregate_values} is not a list but literal ?")
+
+                    aggregates = [
+                        f"{field_spec.split('(')[1][:-1]}:{field_spec.split(':')[1].split('(')[0]}" if '(' in field_spec else field_spec
+                        for field_spec in aggregates
+                    ]
+                    aggregates = [
+                        '__count' if field_spec in ('id:count', 'id:count_distinct') else field_spec
+                        for field_spec in aggregates
+                    ]
+
                     groupby = ast.literal_eval(ast.unparse(groupby_values))
                     if isinstance(groupby, str):
                         groupby = [groupby]
-
-                    aggregates = [
-                        f"{field_spec.split('(')[1][:-1]}:{field_spec.split(':').split('(')[0]}" if '(' in field_spec else field_spec
-                        for field_spec in aggregates
-                    ]
 
                     aggregates = [
                         f'{field}:sum' if (':' not in field and field != '__count') else field
@@ -158,12 +160,17 @@ class VisitorAggregatesSpec(AbstractVisitor):
                     ]
                     if not aggregates:
                         aggregates = ['__count']
-                    self.add_change(aggregate_values, repr(aggregates))
                 except SyntaxError:
                     pass
+                except ValueError:
+                    pass
+
+                if aggregates is not None:
+                    self.add_change(aggregate_values, repr(aggregates))
 
 
 Steps_visitor: list[AbstractVisitor] = [
+    VisitorToPrivateReadGroup,
     VisitorInverseGroupbyFields,
     VisitorRenameKeywords,
     VisitorAggregatesSpec,
@@ -173,23 +180,24 @@ Steps_visitor: list[AbstractVisitor] = [
 
 def replace_read_group_signature(filename):
     with open(filename, mode='rt') as file:
-        new_all = all = file.read()
-        if '._read_group(' in all:
+        new_all = all_code = file.read()
+        if 'read_group' in all_code:
             for Step in Steps_visitor:
                 visitor = Step()
-                visitor.visit(ast.parse(new_all))
+                try:
+                    visitor.visit(ast.parse(new_all))
+                except Exception:
+                    print(f"ERROR in {filename} at step {visitor.__class__}: \n{new_all}")
+                    raise
                 new_all = visitor.post_process(new_all)
 
-    if new_all != all:
+    if new_all != all_code:
         print('Write, ', filename)
         with open(filename, mode='wt') as file:
             file.write(new_all)
-        
-
-
 
 def walk_directory(directory):
-    for (dirpath, dirnames, filenames) in os.walk(dir):
+    for (dirpath, __, filenames) in os.walk(directory):
         for name in filenames:
             if not name.endswith(include_type):
                 continue
@@ -199,9 +207,9 @@ def walk_directory(directory):
 if __name__ == '__main__':
     directories_to_check = sys.argv[1:]
     print(f"Change _read_group in {directories_to_check}")
-    for dir in directories_to_check:
-        if os.path.isdir(dir):
-            walk_directory(dir)
-        elif os.path.isfile(dir):
-            replace_read_group_signature(dir)
+    for directory in directories_to_check:
+        if os.path.isdir(directory):
+            walk_directory(directory)
+        elif os.path.isfile(directory):
+            replace_read_group_signature(directory)
 
