@@ -25,3 +25,5 @@
 !not_in_selection/*.log
 !expression_tests.sql
 !aggregate_perf.py
+
+!read_group_replacement.py

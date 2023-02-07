@@ -3,7 +3,7 @@ import itertools
 import time
 
 from typing import Iterable, Mapping, MutableSet
-from statistics import fmean, pstdev
+from statistics import fmean, pstdev, NormalDist
 
 import psycopg2
 
@@ -29,6 +29,15 @@ def remove_outliers(values, outlier_thr = 2):
     down_threeshold = (mean - outlier_thr * std)
     up_threeshold = (mean + outlier_thr * std)
     return list(filter(lambda v: v > down_threeshold and v < up_threeshold, values))
+
+def statically_faster(values_1, values_2):
+        """ Return true if values_1 is statically
+        less (faster) than values_2
+        """
+        n1 = NormalDist.from_samples(values_1)
+        n2 = NormalDist.from_samples(values_2)
+        p = n1.overlap(n2)
+        return p < 0.01 and fmean(values_1) < fmean(values_2)
 
 def x_bests(values, x):
     return sorted(values)[:x]
