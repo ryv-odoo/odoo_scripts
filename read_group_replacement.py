@@ -62,10 +62,12 @@ class VisitorInverseGroupbyFields(AbstractVisitor):
                     self.add_change(node.args[1], f'{ast.unparse(new_args_value)}, {ast.unparse(node.args[1])}')
             else:  # len(node.args) <= 2
                 if 'groupby' in key_i_by_key and 'fields' in key_i_by_key:
-                    self.add_change(node.keywords[key_i_by_key['groupby']], node.keywords[key_i_by_key['fields']])
-                    self.add_change(node.keywords[key_i_by_key['fields']], node.keywords[key_i_by_key['groupby']])
+                    if key_i_by_key['groupby'] < key_i_by_key['fields']:
+                        self.add_change(node.keywords[key_i_by_key['groupby']], node.keywords[key_i_by_key['fields']])
+                        self.add_change(node.keywords[key_i_by_key['fields']], node.keywords[key_i_by_key['groupby']])
                 else:
                     raise ValueError(f"{key_i_by_key}, {keywords_by_key}, {node.args}")
+        self.generic_visit(node)
 
 
 class VisitorRenameKeywords(AbstractVisitor):
@@ -80,6 +82,7 @@ class VisitorRenameKeywords(AbstractVisitor):
                 if keyword.arg == 'orderby':
                     new_keyword = ast.keyword('order', keyword.value)
                     self.add_change(keyword, new_keyword)
+        self.generic_visit(node)
 
 
 class VisitorRemoveLazy(AbstractVisitor):
@@ -114,6 +117,7 @@ class VisitorRemoveLazy(AbstractVisitor):
                 for keyword in node.keywords:
                     if keyword.arg == 'lazy':
                         self.add_change(keyword, '')
+        self.generic_visit(node)
 
 
 class VisitorAggregatesSpec(AbstractVisitor):
@@ -167,6 +171,7 @@ class VisitorAggregatesSpec(AbstractVisitor):
 
                 if aggregates is not None:
                     self.add_change(aggregate_values, repr(aggregates))
+        self.generic_visit(node)
 
 
 Steps_visitor: list[AbstractVisitor] = [
@@ -196,12 +201,28 @@ def replace_read_group_signature(filename):
         with open(filename, mode='wt') as file:
             file.write(new_all)
 
+ignore_files = """
+account_accountant/models/bank_rec_widget.py
+account_accountant/models/digest.py
+account_asset/models/account_asset.py
+account_consolidation/models/consolidation_journal.py
+account_consolidation/models/consolidation_period.py
+account_consolidation/report/builder/comparison.py
+account_consolidation/report/builder/default.py
+account_disallowed_expenses/report/account_disallowed_expenses_report.py
+account_disallowed_expenses_fleet/report/account_disallowed_expenses_report.py
+account_followup/models/res_partner.py
+""".strip().split('\n')
+
 def walk_directory(directory):
     for (dirpath, __, filenames) in os.walk(directory):
         for name in filenames:
             if not name.endswith(include_type):
                 continue
             complete_path = os.path.join(dirpath, name)
+            if any(ignore in complete_path for ignore in ignore_files):
+                print('ignore: ', complete_path)
+                continue
             replace_read_group_signature(complete_path)
 
 if __name__ == '__main__':
@@ -212,4 +233,3 @@ if __name__ == '__main__':
             walk_directory(directory)
         elif os.path.isfile(directory):
             replace_read_group_signature(directory)
-
