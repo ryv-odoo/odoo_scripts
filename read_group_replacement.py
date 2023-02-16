@@ -214,6 +214,12 @@ account_disallowed_expenses_fleet/report/account_disallowed_expenses_report.py
 account_followup/models/res_partner.py
 """.strip().split('\n')
 
+regex_dict = r"""
+\{[\s\n]*\w+\[["'](.+)(?:_id)["']\](?:\[0\])?[\s\n]*:[\s\n]*\w+\[.*?([a-zA-Z]+)["']\](\s+for\s+)\w+(\s+in\s+\w+[\s\n]*)\}
+"""
+
+# {$1.id: $2$3$1, $2$4}
+
 def walk_directory(directory):
     for (dirpath, __, filenames) in os.walk(directory):
         for name in filenames:
