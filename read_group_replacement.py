@@ -13,14 +13,14 @@ class AbstractVisitor(ast.NodeVisitor):
         # ((line, line_end, col_offset, end_col_offset), replace_by) NO OVERLAPS
         self.change_todo = []
 
-    def post_process(self, all_code:str) -> str:
+    def post_process(self, all_code:str, file:str) -> str:
         all_lines = all_code.split('\n')
         for (lineno, line_end, col_offset, end_col_offset), new_substring in sorted(self.change_todo, reverse=True):
             if lineno == line_end:
                 line = all_lines[lineno - 1]
                 all_lines[lineno - 1] = line[:col_offset] + new_substring + line[end_col_offset:]
             else:
-                raise ValueError("Error")
+                print(f"Ignore replacement {file}: {(lineno, line_end, col_offset, end_col_offset), new_substring}")
         return '\n'.join(all_lines)
 
     def add_change(self, old_node: ast.AST, new_node: ast.AST | str):
@@ -33,7 +33,7 @@ class AbstractVisitor(ast.NodeVisitor):
 
 class VisitorToPrivateReadGroup(AbstractVisitor):
 
-    def post_process(self, all_code:str) -> str:
+    def post_process(self, all_code:str, file:str) -> str:
         all_lines = all_code.split('\n')
         for i, line in enumerate(all_lines):
             if 'super(' not in line:
@@ -57,14 +57,13 @@ class VisitorInverseGroupbyFields(AbstractVisitor):
                 if 'groupby' in keywords_by_key:
                     fields_args = ast.keyword('fields', node.args[1])
                     self.add_change(node.args[1], new_args_value)
-                    self.add_change(node.keywords[keywords_by_key['groupby']], fields_args)
+                    self.add_change(node.keywords[key_i_by_key['groupby']], fields_args)
                 else:
                     self.add_change(node.args[1], f'{ast.unparse(new_args_value)}, {ast.unparse(node.args[1])}')
             else:  # len(node.args) <= 2
-                if 'groupby' in key_i_by_key and 'fields' in key_i_by_key:
-                    if key_i_by_key['groupby'] < key_i_by_key['fields']:
-                        self.add_change(node.keywords[key_i_by_key['groupby']], node.keywords[key_i_by_key['fields']])
-                        self.add_change(node.keywords[key_i_by_key['fields']], node.keywords[key_i_by_key['groupby']])
+                if 'groupby' in key_i_by_key and 'fields' in key_i_by_key and key_i_by_key['groupby'] > key_i_by_key['fields']:
+                    self.add_change(node.keywords[key_i_by_key['groupby']], node.keywords[key_i_by_key['fields']])
+                    self.add_change(node.keywords[key_i_by_key['fields']], node.keywords[key_i_by_key['groupby']])
                 else:
                     raise ValueError(f"{key_i_by_key}, {keywords_by_key}, {node.args}")
         self.generic_visit(node)
@@ -87,9 +86,9 @@ class VisitorRenameKeywords(AbstractVisitor):
 
 class VisitorRemoveLazy(AbstractVisitor):
 
-    def post_process(self, all_code):
+    def post_process(self, all_code:str, file:str) -> str:
         # remove extra comma ',' and extra line if possible
-        all_code = super().post_process(all_code)
+        all_code = super().post_process(all_code, file)
         all_lines = all_code.split('\n')
         for (lineno, __, col_offset, __), __ in sorted(self.change_todo, reverse=True):
             comma_find = False
@@ -186,7 +185,7 @@ Steps_visitor: list[AbstractVisitor] = [
 def replace_read_group_signature(filename):
     with open(filename, mode='rt') as file:
         new_all = all_code = file.read()
-        if 'read_group' in all_code:
+        if '.read_group(' in all_code or '._read_group(' in all_code:
             for Step in Steps_visitor:
                 visitor = Step()
                 try:
@@ -194,7 +193,9 @@ def replace_read_group_signature(filename):
                 except Exception:
                     print(f"ERROR in {filename} at step {visitor.__class__}: \n{new_all}")
                     raise
-                new_all = visitor.post_process(new_all)
+                new_all = visitor.post_process(new_all, filename)
+            if new_all == all_code:
+                print('read_group detected but not changed', filename)
 
     if new_all != all_code:
         print('Write, ', filename)
@@ -213,9 +214,10 @@ account_disallowed_expenses/report/account_disallowed_expenses_report.py
 account_disallowed_expenses_fleet/report/account_disallowed_expenses_report.py
 account_followup/models/res_partner.py
 """.strip().split('\n')
+ignore_files = [ignore for ignore in ignore_files if ignore]
 
 regex_dict = r"""
-\{[\s\n]*\w+\[["'](.+)(?:_id)["']\](?:\[0\])?[\s\n]*:[\s\n]*\w+\[.*?([a-zA-Z]+)["']\](\s+for\s+)\w+(\s+in\s+\w+[\s\n]*)\}
+\{[\s\n]*\w+\[["'](.+)(?:_ids?)["']\](?:\[0\])?[\s\n]*:[\s\n]*\w+\[.*?([a-zA-Z]+)["']\](\s+for\s+)\w+(\s+in\s+\w+[\s\n]*)\}
 """
 
 # {$1.id: $2$3$1, $2$4}
@@ -233,7 +235,7 @@ def walk_directory(directory):
 
 if __name__ == '__main__':
     directories_to_check = sys.argv[1:]
-    print(f"Change _read_group in {directories_to_check}")
+    print(f"Change _read_group in {directories_to_check}, nb ignore_files:{len(ignore_files)}")
     for directory in directories_to_check:
         if os.path.isdir(directory):
             walk_directory(directory)

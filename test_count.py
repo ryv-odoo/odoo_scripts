@@ -29,7 +29,7 @@ all_possibility = [
 def create_table(con):
     with psycopg2.connect(CONNECTION_PARAMS) as con:
         with con.cursor() as cr:
-            cr.execute("drop table test_count;")
+            cr.execute("drop table IF EXISTS test_count;")
             cr.execute("""
             CREATE TABLE test_count (
                 id SERIAL PRIMARY KEY,
