@@ -17,6 +17,7 @@
 !psql_log.md
 !exists_smarty.py
 !modified_trigger_perf.py
+!new_domain_object.py
 
 !res_exists_perf/*.log
 !memory_shared_lru/*.py
