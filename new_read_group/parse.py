@@ -9,6 +9,8 @@ f_after = sys.argv[2]
 re_line = re.compile(r"(.+) \+\- (.+) ms (.+) : (.+) - (.+)")
 
 
+ratios = []
+
 slowers = []
 slowers_diff = []
 fasters = []
@@ -34,20 +36,37 @@ with open(f_before, "rt") as f1, open(f_after, "rt") as f2:
         #     break
         n_1 = NormalDist(mean_1, std_1 or 0.0000001)
         n_2 = NormalDist(mean_2, std_2 or 0.0000001)
-        if 'ir.attachment' in model_1:
+        if 'ir.attachment' in model_1:  # Before security check was broken
             continue
-        if n_1.overlap(n_2) < 0.05:
-            if n_1.mean < n_2.mean:
-                percentage_slower = ((n_2.mean - n_1.mean) / n_1.mean) * 100
-                print(f"Slower {percentage_slower:.4f} %", i, model_1[:30], method_1, mean_1, mean_2)
-                slowers.append(percentage_slower)
-                slowers_diff.append(n_2.mean - n_1.mean)
-            if n_1.mean > n_2.mean:
-                percentage_faster = ((n_1.mean - n_2.mean) / n_2.mean) * 100
-                print(f"Faster {percentage_faster:.4f} %", i, model_1[:30], method_1, mean_1, mean_2)
-                fasters.append(percentage_faster)
-                fasters_diff.append(n_1.mean - n_2.mean)
 
-    print(f"Slower {len(slowers)}/{len(matches_before)}: sum_difference = {sum(slowers_diff):.4f}, mediam % {median(slowers):.4f}, mean % {fmean(slowers):.4f}")
-    print(f"Faster {len(fasters)}/{len(matches_before)}: sum_difference = {sum(fasters_diff):.4f}, mediam % {median(fasters):.4f}, mean % {fmean(fasters):.4f}")
+        if mean_2 < mean_1:
+            # After faster
+            ratio = (mean_1 - mean_2) / mean_1
+        else:
+            ratio = - ((mean_2 - mean_1) / mean_2)
 
+        ratios.append(ratio)
+
+        print(i, model_1[:30], method_1, mean_1, mean_2, ratio)
+
+
+    #     if n_1.overlap(n_2) < 0.05:
+    #         if n_1.mean < n_2.mean:
+    #             percentage_slower = ((n_2.mean - n_1.mean) / n_1.mean) * 100
+    #             print(f"Slower {percentage_slower:.4f} %", i, model_1[:30], method_1, mean_1, mean_2)
+    #             slowers.append(percentage_slower)
+    #             slowers_diff.append(n_2.mean - n_1.mean)
+    #         if n_1.mean > n_2.mean:
+    #             percentage_faster = ((n_1.mean - n_2.mean) / n_2.mean) * 100
+    #             print(f"Faster {percentage_faster:.4f} %", i, model_1[:30], method_1, mean_1, mean_2)
+    #             fasters.append(percentage_faster)
+    #             fasters_diff.append(n_1.mean - n_2.mean)
+
+    # print(f"Slower {len(slowers)}/{len(matches_before)}: sum_difference = {sum(slowers_diff):.4f}, mediam % {median(slowers):.4f}, mean % {fmean(slowers):.4f}")
+    # print(f"Faster {len(fasters)}/{len(matches_before)}: sum_difference = {sum(fasters_diff):.4f}, mediam % {median(fasters):.4f}, mean % {fmean(fasters):.4f}")
+    def ratio_to_time_faster(ratio):
+        return (1 / (1 - ratio))
+    print(f"In average new read_group is {fmean(ratios)} -> {ratio_to_time_faster(fmean(ratios))} faster")
+    print(f"Median: {median(ratios)} -> {ratio_to_time_faster(median(ratios))} faster")
+    print(f"Max: {max(ratios)} -> {ratio_to_time_faster(max(ratios))} faster")
+    print(f"Min: {min(ratios)} -> {ratio_to_time_faster(min(ratios))} faster")
