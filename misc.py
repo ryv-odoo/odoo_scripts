@@ -31,13 +31,13 @@ def remove_outliers(values, outlier_thr = 2):
     return list(filter(lambda v: v > down_threeshold and v < up_threeshold, values))
 
 def statically_faster(values_1, values_2):
-        """ Return true if values_1 is statically
-        less (faster) than values_2
-        """
-        n1 = NormalDist.from_samples(values_1)
-        n2 = NormalDist.from_samples(values_2)
-        p = n1.overlap(n2)
-        return p < 0.01 and fmean(values_1) < fmean(values_2)
+    """ Return true if values_1 is statically
+    less (faster) than values_2
+    """
+    n1 = NormalDist.from_samples(values_1)
+    n2 = NormalDist.from_samples(values_2)
+    p = n1.overlap(n2)
+    return p < 0.01 and fmean(values_1) < fmean(values_2)
 
 def x_bests(values, x):
     return sorted(values)[:x]
@@ -162,9 +162,13 @@ def psql_vacuum_analyse(CONNECTION_PARAMS, table_name):
             cur.execute(f"VACUUM ANALYZE {table_name if table_name else ''}")
 
 def psql_explain(cur, query):
-    cur.execute("EXPLAIN ANALYZE " + query)
+    cur.execute("EXPLAIN " + query)
     return "\n".join(s for s, in cur.fetchall())
 
 def psql_explain_analyse(cur, query):
     cur.execute("EXPLAIN ANALYZE " + query)
+    return "\n".join(s for s, in cur.fetchall())
+
+def psql_explain_complete_analyse(cur, query):
+    cur.execute("EXPLAIN (ANALYZE, SETTINGS, VERBOSE) " + query)
     return "\n".join(s for s, in cur.fetchall())
