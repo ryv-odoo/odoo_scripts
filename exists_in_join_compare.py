@@ -87,7 +87,6 @@ def create_indexes(cr):
 
 def fill_database(data_case):
 
-    print("create sale_order")
     with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cr:
         states = []
         for state, proportion in data_case['sale_order_state_proportion'].items():
@@ -101,7 +100,6 @@ def fill_database(data_case):
             INSERT INTO sale_order (state, partner) VALUES {','.join(['%s'] * len(values_sale_order))}
         """, values_sale_order)
 
-    print("create sale_order_line")
     with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cr:
         values_sale_order_line = tuple(
             (
@@ -119,7 +117,7 @@ def fill_database(data_case):
 SQL_alternative = {
     "sale.order.line - search - [order_id.state = 'draft']": {
         'in': """
-            SELECT "sale_order_line"."id" 
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE (
                 "sale_order_line"."sale_id" IN (
@@ -154,8 +152,8 @@ SQL_alternative = {
         """
             WITH subquery AS (
                 SELECT "sale_order"."id" FROM "sale_order" WHERE "sale_order"."state" = 'draft'
-            ) 
-            SELECT "sale_order_line"."id" 
+            )
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE "sale_order_line"."sale_id" IN (SELECT "id" FROM "subquery")
             ORDER BY "sale_order_line"."id"
@@ -165,8 +163,8 @@ SQL_alternative = {
         # """
         #     WITH subquery AS (
         #         SELECT * FROM "sale_order" WHERE "sale_order"."state" = 'draft'
-        #     ) 
-        #     SELECT "sale_order_line"."id" 
+        #     )
+        #     SELECT "sale_order_line"."id"
         #     FROM "sale_order_line"
         #         LEFT JOIN "subquery" ON "subquery"."id" = "sale_order_line"."sale_id"
         #     WHERE "subquery"."id" IS NOT NULL
@@ -175,7 +173,7 @@ SQL_alternative = {
     },
     "sale.order.line - search - [order_id.state = 'draft' OR qty > 50000]": {
         'in': """
-            SELECT "sale_order_line"."id" 
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE (
                 "sale_order_line"."sale_id" IN (
@@ -201,7 +199,7 @@ SQL_alternative = {
 
         'join':
         """
-            SELECT "sale_order_line"."id" 
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
                 LEFT JOIN "sale_order" ON "sale_order"."id" = "sale_order_line"."sale_id"
             WHERE "sale_order"."state" = 'draft' OR "sale_order_line"."qty" > 50000
@@ -212,8 +210,8 @@ SQL_alternative = {
         """
             WITH subquery AS (
                 SELECT "sale_order"."id" FROM "sale_order" WHERE "sale_order"."state" = 'draft'
-            ) 
-            SELECT "sale_order_line"."id" 
+            )
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE "sale_order_line"."sale_id" IN (SELECT "id" FROM "subquery") OR "sale_order_line"."qty" > 50000
             ORDER BY "sale_order_line"."id"
@@ -233,7 +231,7 @@ SQL_alternative = {
     },
     "sale.order.line - search - [order_id.state = 'draft' AND qty > 50000]": {
         'in': """
-            SELECT "sale_order_line"."id" 
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE (
                 "sale_order_line"."sale_id" IN (
@@ -259,7 +257,7 @@ SQL_alternative = {
 
         'join':
         """
-            SELECT "sale_order_line"."id" 
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
                 LEFT JOIN "sale_order" ON "sale_order"."id" = "sale_order_line"."sale_id"
             WHERE "sale_order"."state" = 'draft' AND "sale_order_line"."qty" > 50000
@@ -270,8 +268,8 @@ SQL_alternative = {
         """
             WITH subquery AS (
                 SELECT "sale_order"."id" FROM "sale_order" WHERE "sale_order"."state" = 'draft'
-            ) 
-            SELECT "sale_order_line"."id" 
+            )
+            SELECT "sale_order_line"."id"
             FROM "sale_order_line"
             WHERE "sale_order_line"."sale_id" IN (SELECT "id" FROM "subquery") AND "sale_order_line"."qty" > 50000
             ORDER BY "sale_order_line"."id"
@@ -293,7 +291,6 @@ SQL_alternative = {
 
 def one_data_case_test():
 
-    print("Launch test")
     result_explain = defaultdict(dict)
     for alternative, sql_requests in SQL_alternative.items():
         with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cr:
@@ -314,7 +311,7 @@ def one_data_case_test():
     for alternative, case_plans in result_explain.items():
         list_plan = list(case_plans.values())
         if len(set(list_plan)) != 1:
-            print(f"Some queries has a different plan for {alternative} ({len(set(list_plan))}):")
+            print(f"\n-> Some queries has a different plan for {alternative} ({len(set(list_plan))}):")
             case_by_plan = defaultdict(list)
             for case, plan in case_plans.items():
                 case_by_plan[plan].append(case)
@@ -323,23 +320,38 @@ def one_data_case_test():
                 print(f"These cases {cases} has this plan:\n{plan}")
                 print("  ------------------------")
         else:
-            print(f"{alternative} all plan is equals")
+            print(f"\n-> {alternative} all plan is equals")
 
 
 def main():
     psql_set_timeout(CONNECTION_PARAMS, 30)
+    with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cur:
+        cur.execute("SET jit_above_cost = 100000;")
 
     for str_case, data_case in data_cases.items():
         print(" ################# ", str_case, ' #####################')
         with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cr:
             drop_tables(cr)
             create_tables(cr)
-        
 
+        print('> Fill Database')
         fill_database(data_case)
+        print('> Analyze Vaccum')
         psql_vacuum_analyse(CONNECTION_PARAMS, None)
-
+        print('> Launch Test\n')
         one_data_case_test()
+
+    with psycopg2.connect(CONNECTION_PARAMS) as conn, conn.cursor() as cur:
+        cur.execute("SET jit_above_cost = -1;")
+
+
+# Issue with the EXISTS:
+
+# the AlternativesSubPlan cost is "badly" compute
+# And since In psql v14 this commit has been added:
+# https://github.com/postgres/postgres/commit/41efb8340877e8ffd0023bb6b2ef22ffd1ca014d
+
+
 
 
 
