@@ -1,7 +1,7 @@
 
 import psycopg2
 
-from misc import psql_analyse, psql_explain_analyse, psql_vacuum_analyse
+from utils.misc import psql_analyse, psql_explain_analyse, psql_vacuum_analyse
 
 
 # Bad alternative

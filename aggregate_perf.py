@@ -1,6 +1,6 @@
 import psycopg2
 
-from misc import psql_analyse, psql_explain_analyse, psql_vacuum_analyse, timed_call, OrderedSet
+from utils.misc import psql_analyse, psql_explain_analyse, psql_vacuum_analyse, timed_call, OrderedSet
 
 CONNECTION_PARAMS = "dbname=master"
 TABLE = 'test_aggregate'

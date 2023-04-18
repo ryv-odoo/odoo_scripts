@@ -5,7 +5,7 @@ import random
 import time
 from statistics import NormalDist
 
-from misc import psql_vacuum_analyse, remove_outliers, x_bests
+from utils.misc import psql_vacuum_analyse, remove_outliers, x_bests
 
 CONNECTION_PARAMS = "dbname=master"
 REPEAT_TEST = 200

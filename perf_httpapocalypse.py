@@ -12,11 +12,11 @@ import grequests
 
 COLOR = True
 if COLOR:
-    from misc import BOLD, GREEN, RED, RESET
+    from utils.misc import BOLD, GREEN, RED, RESET
 else:
     BOLD, GREEN, RED, RESET = [""] * 4
 
-from misc import remove_outliers, x_bests
+from utils.misc import remove_outliers, x_bests
 
 URI = "http://127.0.0.1:8069"
 NB_TODO = 2_000

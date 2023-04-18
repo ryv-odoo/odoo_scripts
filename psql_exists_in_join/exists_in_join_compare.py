@@ -5,7 +5,7 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.errors
 
-from misc import psql_explain, psql_vacuum_analyse, psql_set_timeout
+from utils.misc import psql_explain, psql_vacuum_analyse, psql_set_timeout
 
 CONNECTION_PARAMS = "dbname=master"
 

@@ -6,7 +6,7 @@ from statistics import NormalDist, fmean, pstdev
 import random
 import itertools
 
-from misc import unique
+from utils.misc import unique
 
 import psycopg2
 import psycopg2.extensions
@@ -16,7 +16,7 @@ import psycopg2.errors
 COLOR = False
 
 if COLOR:
-    from misc import BOLD, GREEN, RED, RESET
+    from utils.misc import BOLD, GREEN, RED, RESET
 else:
     BOLD, GREEN, RED, RESET = [""] * 4
 

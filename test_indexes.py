@@ -1,6 +1,6 @@
 import psycopg2
 
-from misc import psql_activate_trigram, psql_activate_unaccent, psql_explain_analyse, psql_set_timeout, psql_vacuum_analyse, timed_call
+from utils.misc import psql_activate_trigram, psql_activate_unaccent, psql_explain_analyse, psql_set_timeout, psql_vacuum_analyse, timed_call
 
 CONNECTION_PARAMS = "dbname=master"
 UNACCENT_METHOD = 'unaccent'

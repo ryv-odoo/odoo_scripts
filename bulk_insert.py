@@ -7,7 +7,7 @@ import tabulate
 COLOR = True
 
 if COLOR:
-    from misc import BLUE, GREEN, RED, RESET, YELLOW
+    from utils.misc import BLUE, GREEN, RED, RESET, YELLOW
 else:
     BLUE, GREEN, RED, RESET, YELLOW = [""] * 5
 

@@ -12,7 +12,7 @@ from psycopg2.extensions import AsIs
 from psycopg2.extras import execute_batch
 import psycopg2
 
-from misc import GREEN, RED, RESET, x_bests, frozendict
+from utils.misc import GREEN, RED, RESET, x_bests, frozendict
 
 CONNECTION_PARAMS = "dbname=master"
 
