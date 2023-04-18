@@ -29,5 +29,6 @@
 !new_read_group/*.txt
 !expression_tests.sql
 !aggregate_perf.py
+!expression_performance/**
 
 !read_group_replacement.py
