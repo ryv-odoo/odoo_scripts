@@ -18,6 +18,7 @@
 !exists_smarty.py
 !modified_trigger_perf.py
 !new_domain_object.py
+!regex_name_get.py
 !__init__.py
 
 !psql_exists_in_join/*.py
@@ -29,6 +30,6 @@
 !new_read_group/*.txt
 !expression_tests.sql
 !aggregate_perf.py
-!expression_performance/**
+!expression_performance/**/*.py
 
 !read_group_replacement.py
