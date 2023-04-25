@@ -45,6 +45,7 @@ class PerfAbstract(models.AbstractModel):
 class PerfParent(models.Model):
     _name = _description = 'perf.parent'
     _inherit = 'perf.abstract'
+    _log_access = False
 
     child_ids = fields.One2many('perf.child', 'uniform_parent_id')
     main_tag_id = fields.Many2one('perf.tag')
@@ -54,8 +55,9 @@ class PerfParent(models.Model):
 class PerfChild(models.Model):
     _name = _description = 'perf.child'
     _inherit = 'perf.abstract'
+    _log_access = False
 
-    uniform_parent_id = fields.Many2one('perf.parent', 'Parent')
+    uniform_parent_id = fields.Many2one('perf.parent', 'Parent', required=True)
     tag_ids = fields.Many2many('perf.tag')
 
     def _custom_populate_factories(self, rng: Random):
@@ -67,10 +69,10 @@ class PerfChild(models.Model):
             }
 
 
-
 class PerfTag(models.Model):
     _name = _description = 'perf.tag'
     _inherit = 'perf.abstract'
+    _log_access = False
 
 
 

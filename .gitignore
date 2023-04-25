@@ -31,5 +31,6 @@
 !expression_tests.sql
 !aggregate_perf.py
 !expression_performance/**/*.py
+!expression_performance/**/*.csv
 
 !read_group_replacement.py
