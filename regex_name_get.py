@@ -1,6 +1,3 @@
-
-
-
 import ast
 import os
 import sys
@@ -23,7 +20,7 @@ class AbstractVisitor(ast.NodeVisitor):
         return all_code
 
     def add_change(self, old_str, new_str):
-        print()
+        # print()
 
         # Add ruff auto fix
         # ['/home/odoo/Documents/dev/.env/bin/ruff', '--force-exclude', '--no-cache', '--fix', '--stdin-filename', '/home/odoo/Documents/dev/odoo_scripts/regex_name_get.py']
@@ -31,18 +28,24 @@ class AbstractVisitor(ast.NodeVisitor):
         result = subprocess.run(
             ['ruff', '-', '--fix', '--stdin-filename', '<part_of_file>', '--select=ALL', '--ignore=D211,D213,Q,D'],
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             input=new_str.encode('utf-8'),
         )
+        error = result.stderr.decode('utf-8')
+        if error:
+            print("ERROR : ", error)
+            print(new_str)
+            return
         new_str_ruff = result.stdout.decode('utf-8')
 
-        print("OLD:")
-        print(old_str)
-        print("NEW:")
-        print(new_str)
-        print("After RUFF:")
-        print(new_str_ruff)
+        # print("OLD:")
+        # print(old_str)
+        # print("NEW:")
+        # print(new_str)
+        # print("After RUFF:")
+        # print(new_str_ruff)
 
-        self.change_todo.append((old_str, "    " + new_str_ruff))
+        self.change_todo.append((old_str, new_str_ruff))
 
 # [(batch.id, f'{batch.name} ({state_values.get(batch.state)})') for batch in self]
 list_comprehension_re = re.compile(r"""def name_get\(self\):(.*)
@@ -81,12 +84,13 @@ class VisitorNameGet(AbstractVisitor):
                 new_code = re.sub(variable_to_remove + r".append\(\((.+).id, (.*),?\)\)", r"\g<1>.display_name = \g<2>", new_code)
                 self.add_change(code, new_code)
             else:
+                return
                 print(f"Cannot find a way to convert:\n{code}")
 
         # self.generic_visit(node)
 
 ignore_files = """
-/home/odoo/Documents/dev/odoo/odoo/models.py
+../odoo/odoo/models.py
 """.strip().split('\n')
 ignore_files = [ignore for ignore in ignore_files if ignore]
 
