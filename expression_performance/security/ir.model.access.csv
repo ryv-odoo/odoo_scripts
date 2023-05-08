@@ -1,4 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_perf_tag,perf.tag,model_perf_tag,,1,1,1,1
-access_perf_parent,perf.parent,model_perf_parent,,1,1,1,1
-access_perf_child,perf.child,model_perf_child,,1,1,1,1
+access_perf_container,perf.container,model_perf_container,,1,1,1,1
+access_perf_line,perf.line,model_perf_line,,1,1,1,1

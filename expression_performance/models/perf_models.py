@@ -17,7 +17,7 @@ class BaseModelExtention(models.AbstractModel):
         generator = split_every(BATCH_SIZE_CREATION, generator)
 
         for i, pieces in enumerate(generator):
-            print(f"Insert {i * BATCH_SIZE_CREATION}/{nb_to_create} {self._name}")
+            print(f"Insert {self._name}: {i * BATCH_SIZE_CREATION}/{nb_to_create}")
             self.create(pieces)
             self.env.cr.commit()
 
@@ -42,30 +42,33 @@ class PerfAbstract(models.AbstractModel):
                 'float_uniform_1000': rng.random() * 1000,
             }
 
-class PerfParent(models.Model):
-    _name = _description = 'perf.parent'
+class PerfContainer(models.Model):
+    _name = _description = 'perf.container'
     _inherit = 'perf.abstract'
     _log_access = False
 
-    child_ids = fields.One2many('perf.child', 'uniform_parent_id')
+    line_ids = fields.One2many('perf.line', 'uniform_container_id')
     main_tag_id = fields.Many2one('perf.tag')
 
 
 
-class PerfChild(models.Model):
-    _name = _description = 'perf.child'
+class PerfLine(models.Model):
+    _name = _description = 'perf.line'
     _inherit = 'perf.abstract'
     _log_access = False
+    _parent_store = True
 
-    uniform_parent_id = fields.Many2one('perf.parent', 'Parent', required=True)
+    uniform_container_id = fields.Many2one('perf.container', 'Container', required=True)
     tag_ids = fields.Many2many('perf.tag')
+    parent_id = fields.Many2one('perf.line')
+    parent_path = fields.Char(index=True, unaccent=False)
 
     def _custom_populate_factories(self, rng: Random):
-        ids_parent = self.env['perf.parent'].search([])._ids
+        ids_container = self.env['perf.container'].search([])._ids
         generator_ab = super()._custom_populate_factories(rng)
         for __ in itertools.count():
             yield next(generator_ab) | {
-                'uniform_parent_id': rng.choice(ids_parent),
+                'uniform_container_id': rng.choice(ids_container),
             }
 
 
