@@ -66,9 +66,13 @@ class PerfLine(models.Model):
     def _custom_populate_factories(self, rng: Random):
         ids_container = self.env['perf.container'].search([])._ids
         generator_ab = super()._custom_populate_factories(rng)
-        for __ in itertools.count():
+        for i in itertools.count():
+            parent_id = False
+            if i > 1 and rng.random() > 0.01:  # 25 % of set
+                parent_id = rng.randint(1, i-1)
             yield next(generator_ab) | {
                 'uniform_container_id': rng.choice(ids_container),
+                'parent_id': parent_id,
             }
 
 
