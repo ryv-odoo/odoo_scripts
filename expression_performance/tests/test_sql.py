@@ -1,4 +1,5 @@
 import threading
+import re
 from itertools import combinations_with_replacement
 
 import odoo
@@ -40,7 +41,7 @@ class TestPerformanceSQL(BaseCase):
 
         cls.env = api.Environment(cls.cr, odoo.SUPERUSER_ID, {})
 
-    def populate(self, nb_tag=0, nb_container=10_000, nb_line=50_000):
+    def populate(self, nb_tag=0, nb_container=0, nb_line=0):
         models = {
             'perf.tag': nb_tag,
             'perf.container': nb_container,
@@ -59,12 +60,14 @@ class TestPerformanceSQL(BaseCase):
 
     def create_indexes_uniform(self):
         for table in ['perf_line', 'perf_container', 'perf_tag']:
-            self.env.cr.execute(f"CREATE INDEX IF NOT EXISTS {table}_float_uniform_1000 ON {table}(float_uniform_1000)")
+            self.env.cr.execute(f"CREATE INDEX IF NOT EXISTS {table}_uniform_1000 ON {table}(uniform_1000)")
+        self.env.cr.execute('ANALYSE;')
         self.env.cr.commit()
 
     def delete_indexes_uniform(self):
         for table in ['perf_line', 'perf_container', 'perf_tag']:
-            self.env.cr.execute(f"DROP INDEX IF EXISTS {table}_float_uniform_1000")
+            self.env.cr.execute(f"DROP INDEX IF EXISTS {table}_uniform_1000")
+        self.env.cr.execute('ANALYSE;')
         self.env.cr.commit()
 
     def delete_indexes_many2one(self):
@@ -86,20 +89,17 @@ class TestPerformanceSQL(BaseCase):
         self.delete_all_indexes()
 
     def test_truncate_everything(self):
-        print('Truncate everything')
         for table in ['perf_line', 'perf_container', 'perf_tag']:
             self.env.cr.execute(f'TRUNCATE "{table}" RESTART IDENTITY CASCADE')
         self.env.cr.commit()
 
     def test_one_sub_level_1_and(self):
-        self.test_truncate_everything()
-        self.populate()
 
         def domain_like(args):
             return [
                 '&',
-                ('float_uniform_1000', '<', args[0]),
-                ('uniform_container_id.float_uniform_1000', '<', args[1]),
+                ('uniform_1000', '<', args[0]),
+                ('uniform_container_id.uniform_1000', '<', args[1]),
             ]
 
         queries = {
@@ -108,8 +108,8 @@ SELECT "perf_line"."id"
 FROM "perf_line"
     JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
 WHERE
-    "perf_line"."float_uniform_1000" < %s AND
-    "perf_container"."float_uniform_1000" < %s
+    "perf_line"."uniform_1000" < %s AND
+    "perf_container"."uniform_1000" < %s
 ORDER BY "perf_line"."id"
             """,
 
@@ -117,8 +117,8 @@ ORDER BY "perf_line"."id"
 SELECT "perf_line"."id"
 FROM "perf_line"
 WHERE
-    "perf_line"."float_uniform_1000" < %s AND
-    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."float_uniform_1000" < %s)
+    "perf_line"."uniform_1000" < %s AND
+    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s)
 ORDER BY "perf_line"."id"
             """,
 
@@ -126,28 +126,26 @@ ORDER BY "perf_line"."id"
 SELECT "perf_line"."id"
 FROM "perf_line"
 WHERE
-    "perf_line"."float_uniform_1000" < %s AND
-    EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."float_uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
+    "perf_line"."uniform_1000" < %s AND
+    EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
 ORDER BY "perf_line"."id"
             """,
         }
 
-        self.launch_queries(
+        self.complete_test(
             'Level 1 - AND',
             queries,
-            combinations_with_replacement(ratios_possible, 2),
+            list(combinations_with_replacement(ratios_possible, 2)),
             domain_like,
         )
 
     def test_one_sub_level_1_or(self):
-        self.test_truncate_everything()
-        self.populate()
 
         def domain_like(args):
             return [
                 '|',
-                ('float_uniform_1000', '<', args[0]),
-                ('uniform_container_id.float_uniform_1000', '<', args[1]),
+                ('uniform_1000', '<', args[0]),
+                ('uniform_container_id.uniform_1000', '<', args[1]),
             ]
 
         queries = {
@@ -156,8 +154,8 @@ SELECT "perf_line"."id"
 FROM "perf_line"
     JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
 WHERE
-    "perf_line"."float_uniform_1000" < %s OR
-    "perf_container"."float_uniform_1000" < %s
+    "perf_line"."uniform_1000" < %s OR
+    "perf_container"."uniform_1000" < %s
 ORDER BY "perf_line"."id"
             """,
 
@@ -165,8 +163,8 @@ ORDER BY "perf_line"."id"
 SELECT "perf_line"."id"
 FROM "perf_line"
 WHERE
-    "perf_line"."float_uniform_1000" < %s OR
-    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."float_uniform_1000" < %s)
+    "perf_line"."uniform_1000" < %s OR
+    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s)
 ORDER BY "perf_line"."id"
             """,
 
@@ -174,36 +172,127 @@ ORDER BY "perf_line"."id"
 SELECT "perf_line"."id"
 FROM "perf_line"
 WHERE
-    "perf_line"."float_uniform_1000" < %s OR
-    EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."float_uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
+    "perf_line"."uniform_1000" < %s OR
+    EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
 ORDER BY "perf_line"."id"
             """,
         }
 
-        self.launch_queries(
+        self.complete_test(
             'Level 1 - OR',
             queries,
-            combinations_with_replacement(ratios_possible, 2),
+            list(combinations_with_replacement(ratios_possible, 2)),
             domain_like,
         )
 
-    def test_two_level_condition(self):
-        self.test_truncate_everything()
-        self.populate()
+    def test_two_sub_level_1_and(self):
 
         def domain_like(args):
             return [
-                ('parent_id.uniform_container_id.float_uniform_1000', '<', args[0])
+                '&',
+                ('parent_id.uniform_1000', '<', args[0]),
+                ('uniform_container_id.uniform_1000', '<', args[1]),
             ]
 
         queries = {
             'join': """
 SELECT "perf_line"."id"
 FROM "perf_line"
-    LEFT JOIN "perf_line" AS "perf_line__parent_id" ON "perf_line__parent_id"."id" = "perf_line"."parent_id"
-    LEFT JOIN "perf_container" ON "perf_line__parent_id"."uniform_container_id" = "perf_container"."id"
+    JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
+    LEFT JOIN "perf_line" AS "perf_line_1" ON "perf_line"."parent_id" = "perf_line_1"."id"
 WHERE
-    "perf_container"."float_uniform_1000" < %s
+    "perf_line_1"."uniform_1000" < %s AND
+    "perf_container"."uniform_1000" < %s
+ORDER BY "perf_line"."id"
+            """,
+
+            'subselect': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+WHERE
+    "perf_line"."parent_id" IN (SELECT "perf_line"."id" FROM "perf_line" WHERE "perf_line"."uniform_1000" < %s) AND
+    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s)
+ORDER BY "perf_line"."id"
+            """,
+
+            'exists': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+WHERE
+    EXISTS (SELECT FROM "perf_line" AS "perf_line_1" WHERE "perf_line_1"."uniform_1000" < %s AND "perf_line_1"."id" = "perf_line"."parent_id")
+    AND EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
+ORDER BY "perf_line"."id"
+            """,
+        }
+
+        self.complete_test(
+            'Level 1 - 2 Subquery - And',
+            queries,
+            list(combinations_with_replacement(ratios_possible, 2)),
+            domain_like,
+        )
+
+    def test_two_sub_level_1_or(self):
+
+        def domain_like(args):
+            return [
+                '|',
+                ('parent_id.uniform_1000', '<', args[0]),
+                ('uniform_container_id.uniform_1000', '<', args[1]),
+            ]
+
+        queries = {
+            'join': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+    JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
+    LEFT JOIN "perf_line" AS "perf_line_1" ON "perf_line"."parent_id" = "perf_line_1"."id"
+WHERE
+    "perf_line_1"."uniform_1000" < %s OR
+    "perf_container"."uniform_1000" < %s
+ORDER BY "perf_line"."id"
+            """,
+
+            'subselect': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+WHERE
+    "perf_line"."parent_id" IN (SELECT "perf_line"."id" FROM "perf_line" WHERE "perf_line"."uniform_1000" < %s) OR
+    "perf_line"."uniform_container_id" IN (SELECT "perf_container"."id" FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s)
+ORDER BY "perf_line"."id"
+            """,
+
+            'exists': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+WHERE
+    EXISTS (SELECT FROM "perf_line" AS "perf_line_1" WHERE "perf_line_1"."uniform_1000" < %s AND "perf_line_1"."id" = "perf_line"."parent_id")
+    OR EXISTS (SELECT FROM "perf_container" WHERE "perf_container"."uniform_1000" < %s AND "perf_container"."id" = "perf_line"."uniform_container_id")
+ORDER BY "perf_line"."id"
+            """,
+        }
+
+        self.complete_test(
+            'Level 1 - 2 Subquery - Or',
+            queries,
+            list(combinations_with_replacement(ratios_possible, 2)),
+            domain_like,
+        )
+
+    def test_two_level_condition(self):
+        def domain_like(args):
+            return [
+                ('parent_id.uniform_container_id.uniform_1000', '<', args[0])
+            ]
+
+        queries = {
+            'join': """
+SELECT "perf_line"."id"
+FROM "perf_line"
+    LEFT JOIN "perf_line" AS "perf_line_1" ON "perf_line_1"."id" = "perf_line"."parent_id"
+    LEFT JOIN "perf_container" ON "perf_line_1"."uniform_container_id" = "perf_container"."id"
+WHERE
+    "perf_container"."uniform_1000" < %s
 ORDER BY "perf_line"."id"
             """,
 
@@ -215,7 +304,7 @@ WHERE
         SELECT "perf_line"."id" FROM "perf_line"
         WHERE "perf_line"."uniform_container_id" IN (
             SELECT "perf_container"."id" FROM "perf_container"
-            WHERE "perf_container"."float_uniform_1000" < %s
+            WHERE "perf_container"."uniform_1000" < %s
         )
     )
 ORDER BY "perf_line"."id"
@@ -226,103 +315,92 @@ SELECT "perf_line"."id"
 FROM "perf_line"
 WHERE
     EXISTS (
-        SELECT FROM "perf_line" AS "perf_line__parent_id"
+        SELECT FROM "perf_line" AS "perf_line_1"
         WHERE EXISTS (
             SELECT FROM "perf_container"
-            WHERE "perf_container"."float_uniform_1000" < %s AND "perf_line__parent_id"."uniform_container_id" = "perf_container"."id"
-        ) AND "perf_line"."parent_id" = "perf_line__parent_id"."id"
+            WHERE "perf_container"."uniform_1000" < %s AND "perf_line_1"."uniform_container_id" = "perf_container"."id"
+        ) AND "perf_line"."parent_id" = "perf_line_1"."id"
     )
 ORDER BY "perf_line"."id"
             """,
         }
 
-        self.launch_queries(
+        self.complete_test(
             'Level 2 - For arguments',
             queries,
-            combinations_with_replacement(ratios_possible, 1),
+            list(combinations_with_replacement(ratios_possible, 1)),
             domain_like,
         )
 
-    def launch_queries(self, name_test, queries, args_combinaison, domain_like: callable):
-        for arguments in args_combinaison:
-            res = None
-            for name, query in queries.items():
-                self.env.cr.execute(query, arguments)
-                res_new = [id_ for id_, in self.env.cr.fetchall()]
-                if res and res != res_new:
-                    raise Exception(f'{name} not the same result than the previous one: {name_test}')
-                res = res_new
+    def complete_test(self, name_test, queries, args_combinaison, domain_like: callable):
+        def launch_queries():
+            result = {}
+            for arguments in args_combinaison:
+                res = None
+                for name, query in queries.items():
+                    self.env.cr.execute(query, arguments)
+                    res_new = [id_ for id_, in self.env.cr.fetchall()]
+                    if res and res != res_new:
+                        raise Exception(f'{name} not the same result than the previous one: {name_test}')
+                    res = res_new
 
-            explain_dict = {}
-            for name, query in queries.items():
-                self.env.cr.execute("EXPLAIN " + query, arguments)
-                explain_dict[name] = "\n".join(s for s, in self.env.cr.fetchall())
+                explain_dict = {}
+                for name, query in queries.items():
+                    self.env.cr.execute("EXPLAIN " + query, arguments)
+                    explain_str = "\n".join(s for s, in self.env.cr.fetchall())
+                    # Index Scan using perf_line_pkey on perf_line  (cost=17.16..6018.23 rows=75000 width=4)
+                    start_cost, end_cost = re.search(r'cost=([\d\.]+)\.\.([\d\.]+) rows', explain_str).groups()
+                    explain_dict[name] = (float(start_cost), float(end_cost), explain_str)
 
-            if len(set(explain_dict.values())) == 1:
-                print(f"{name_test}: {domain_like(arguments)} : ALL the same")
-                continue
+                result[arguments] = explain_dict
 
-            print()
-            print(f"{name_test}: {domain_like(arguments)}")
-            for name, explain in explain_dict.items():
-                print(f'=> {name} : ')
-                print(explain)
+                if len(set(explain_dict.values())) == 1:
+                    print(f"===> {name_test}: {domain_like(arguments)} : ALL the same, cost = {start_cost}")
+                    continue
 
-    def test_join_or_left_join_required(self):
-        simple = {
-            'join': """
-SELECT "perf_line"."id"
-FROM "perf_line"
-    JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
-WHERE
-    "perf_line"."float_uniform_1000" < %s
-    AND "perf_container"."float_uniform_1000" < %s
-ORDER BY "perf_line"."id"
-            """,
-            'left join': """
-SELECT "perf_line"."id"
-FROM "perf_line"
-    LEFT JOIN "perf_container" ON "perf_line"."uniform_container_id" = "perf_container"."id"
-WHERE
-    "perf_line"."float_uniform_1000" < %s
-    AND "perf_container"."float_uniform_1000" < %s
-ORDER BY "perf_line"."id"
-            """,
-        }
-        ratio = [
-            # line_selected_pourcent, parent_selected_pourcent
-            (500, 500),   # 50 %
-            (50, 50),   # 5 %
-            (50, 10),
-            (0.5, 10),
-            (50, 0.5),
-            (0.5, 0.5),
-            (0.1, 0.1),  # 0.01 %
+                print(f"===> {name_test}: {domain_like(arguments)}")
+                for name, explain in explain_dict.items():
+                    print(f'====> {name} : {explain[0]}..{explain[1]}')
+
+            return result
+
+        tables = ['nb_container', 'nb_line']
+        sizes_table = [
+            10_000,
+            100_000,
+            # 1_000_000,
+            # 10_000_000
         ]
 
-        for r in ratio:
-            self.env.cr.execute(simple['join'], r)
-            res_join = [id_ for id_, in self.env.cr.fetchall()]
+        size_table_combinations = combinations_with_replacement(sizes_table, len(tables))
 
-            self.env.cr.execute(simple['left join'], r)
-            res_left_join = [id_ for id_, in self.env.cr.fetchall()]
+        indexes_combinations = [
+            [],
+            # ['indexes_many2one'],
+            # ['indexes_uniform'],
+            ['indexes_many2one', 'indexes_uniform'],
+        ]
 
-            if res_join != res_left_join:
-                print(res_join)
-                print(res_left_join)
-                raise Exception("Not the same result")
+        all_result = {}
 
-            self.env.cr.execute("EXPLAIN " + simple['join'], r)
-            res_join = "\n".join(s for s, in self.env.cr.fetchall())
+        for sizes in size_table_combinations:
 
-            self.env.cr.execute("EXPLAIN " + simple['left join'], r)
-            res_left_join = "\n".join(s for s, in self.env.cr.fetchall())
+            args_creation = dict(zip(tables, sizes))
 
-            if res_join != res_left_join:
-                print("FOR : ", r)
-                print(res_join)
-                print("<>")
-                print(res_left_join)
-                print()
+            print(f'=> For {args_creation} truncated and populate tables')
+            self.test_truncate_everything()
+            self.populate(**args_creation)
 
+            for indexes in indexes_combinations:
+                for index in indexes:
+                    getattr(self, f'create_{index}')()
+
+                print(f"==> Indexes : {indexes}")
+                all_result[(
+                    tuple(args_creation.items()),
+                    tuple(indexes),
+                )] = launch_queries()
+
+                for index in indexes:
+                    getattr(self, f'delete_{index}')()
 

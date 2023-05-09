@@ -28,8 +28,7 @@ class PerfAbstract(models.AbstractModel):
     _name = _description = 'perf.abstract'
 
     unique_name = fields.Char('Unique name')
-    uniform_1000 = fields.Integer('Uniform 1000')  # [0, 1000]
-    float_uniform_1000 = fields.Float('Uniform 1000 Float')  # [0.0, 1000.0]
+    uniform_1000 = fields.Float('Uniform 1000')  # [0, 1000]
 
     def _create_indexes(self):
         pass
@@ -38,8 +37,7 @@ class PerfAbstract(models.AbstractModel):
         for i in itertools.count():
             yield {
                 'unique_name': f'{self._name}/{i}',
-                'uniform_1000': rng.randint(0, 1000),
-                'float_uniform_1000': rng.random() * 1000,
+                'uniform_1000': rng.random() * 1000,
             }
 
 class PerfContainer(models.Model):
