@@ -34,3 +34,4 @@
 !expression_performance/**/*.csv
 
 !read_group_replacement.py
+!find_related.py
