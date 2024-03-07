@@ -8,7 +8,6 @@ from statistics import fmean, pstdev
 from uuid import uuid4
 
 import tabulate
-from psycopg2.extensions import AsIs
 from psycopg2.extras import execute_batch
 import psycopg2
 
@@ -33,6 +32,7 @@ def create_table(conn):
                 write_date timestamp without time zone
             );
             CREATE INDEX {TABLE}_gin ON {TABLE} USING gin(name gin_trgm_ops);
+            CREATE INDEX {TABLE}_some_int ON {TABLE}(some_int);
             """)
     conn.commit()
 
@@ -82,41 +82,22 @@ def update_key_without_bypass(cur, id_vals):
     for rid, vals in id_vals.items():
         updates[tuple(vals)][tuple(vals.values())].append(rid)
 
+    def cast(column_name):
+        if column_name in ('some_int', 'create_uid', 'write_uid'):
+            return '::int'
+        elif column_name in ('create_date', 'write_date'):
+            return '::timestamp'
+        else:
+            return '::varchar'
+
     for keys, by_values in updates.items():
         sub_table = f"{TABLE}_tmp"
         column_temp = ', '.join(f'"{column_name}"' for column_name in ('ids',) + keys)
-        set_template = ', '.join(f'"{column_name}" = "{sub_table}"."{column_name}"' for column_name in keys)
+        set_template = ', '.join(f'"{column_name}" = "{sub_table}"."{column_name}"{cast(column_name)}' for column_name in keys)
         values_template = ', '.join(['%s'] * len(by_values))
         query = f'UPDATE "{TABLE}" SET {set_template} FROM (VALUES {values_template}) AS {sub_table}({column_temp}) WHERE "{TABLE}"."id" = ANY("{sub_table}"."ids")'
         list_values = [tuple([ids] + list(values)) for values, ids in by_values.items()]
         cur.execute(query, list_values)
-
-def update_key_with_bypass(cur, id_vals):
-    updates = defaultdict(lambda: defaultdict(list))
-    for rid, vals in id_vals.items():
-        updates[tuple(vals)][tuple(vals.values())].append(rid)
-
-    def batch_update(keys, by_values):
-        sub_table = f"{TABLE}_tmp"
-        column_temp = ', '.join(f'"{column_name}"' for column_name in ('ids',) + keys)
-        set_template = ', '.join(f'"{column_name}" = "{sub_table}"."{column_name}"' for column_name in keys)
-        values_template = ', '.join(['%s'] * len(by_values))
-        query = f'UPDATE "{TABLE}" SET {set_template} FROM (VALUES {values_template}) AS {sub_table}({column_temp}) WHERE "{TABLE}"."id" = ANY("{sub_table}"."ids")'
-        list_params = [tuple([ids] + list(values)) for values, ids in by_values.items()]
-        cur.execute(query, list_params)
-
-    def mono_update(keys, values, ids):
-        set_template = ', '.join(f'"{column_name}" = %s' for column_name in keys)
-        query = f'UPDATE "{TABLE}" SET {set_template} WHERE id IN %s'
-        params = list(values) + [tuple(ids)]
-        cur.execute(query, params)
-
-    for keys, by_values in updates.items():
-        if len(by_values) == 1:
-            values, ids = next(iter(by_values.items()))
-            mono_update(keys, values, ids)
-        else:
-            batch_update(keys, by_values)
 
 # ---------------- Different data kind ------
 # Worst case for new implem, best for current one
@@ -185,11 +166,11 @@ def data_key_change_3_values_change_4(ids):
 
 # NB_ROW = 1_000_000
 NB_ROW = 200_000
-NB_BATCH_UPDATE = 1_000
+NB_BATCH_UPDATE = 1000
 SPACE_BETWEEN_ID = 3
 
-NB_TEST_BY_METHOD = 100
-X_BESTS = 20
+NB_TEST_BY_METHOD = 50
+X_BESTS = 10
 
 if __name__ == "__main__":
     print(f"Create table and row ({NB_ROW})")
@@ -216,7 +197,6 @@ if __name__ == "__main__":
             update_key_values_current,
             update_key_values_execute_batch,
             update_key_without_bypass,
-            update_key_with_bypass,
         ]
         data_methods = [
             data_key_uniform_values_uniform,
