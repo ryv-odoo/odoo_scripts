@@ -30,6 +30,7 @@
 !new_read_group/*.txt
 !expression_tests.sql
 !aggregate_perf.py
+!test_ormcache_sequence.py
 !expression_performance/**/*.py
 !expression_performance/**/*.csv
 
