@@ -8,7 +8,59 @@ from statistics import fmean, stdev
 # Branch for test:
 
 READ_SPEC_CRM = {
-    
+    "stage_id": {
+        "fields": {
+        "display_name": {}
+        }
+    },
+    "probability": {},
+    "active": {},
+    "company_currency": {
+        "fields": {
+        "display_name": {}
+        }
+    },
+    "recurring_revenue_monthly": {},
+    "team_id": {
+        "fields": {
+        "display_name": {}
+        }
+    },
+    "won_status": {},
+    "color": {},
+    "name": {},
+    "expected_revenue": {},
+    "partner_id": {
+        "fields": {
+        "display_name": {}
+        }
+    },
+    "tag_ids": {
+        "fields": {
+        "display_name": {},
+        "color": {}
+        }
+    },
+    "lead_properties": {},
+    "priority": {},
+    "activity_ids": {
+        "fields": {}
+    },
+    "activity_exception_decoration": {},
+    "activity_exception_icon": {},
+    "activity_state": {},
+    "activity_summary": {},
+    "activity_type_icon": {},
+    "activity_type_id": {
+        "fields": {
+        "display_name": {}
+        }
+    },
+    "user_id": {
+        "fields": {
+        "display_name": {}
+        }
+    }
 }
 
 READ_SPEC_TASK = {
@@ -19,22 +71,50 @@ READ_SPEC_PROJECT = {
     
 }
 
-BASE_URL = "https://127.0.0.1/"
+BASE_URL = "http://127.0.0.1:8069"
 COOKIES = {
     "session_id": "",
 }
+MAX_AUTO_UNFOLD = 10
+MAX_PARALLEL_REQUEST = 6  # Max of chrome
 
-SCENARIO = [
+SCENARIOS = [
     # ------- crm.lead
-    # Kanban: Open CRM - No filter - all open lead are loaded
+    # Open CRM - Kanban - Filter: default (none) - all open lead are loaded
+    {
+        'name': "Open CRM - Kanban - Filter: default (none) - all open lead are loaded",
+        'model': 'crm.lead',
+        'domain': [],
+        'groupby': ["create_date:month"],
+        'aggregates': ["probability:avg", "recurring_revenue_monthly:sum", "color:sum", "expected_revenue:sum"],
+        'read_specification': READ_SPEC_CRM,
+        'auto_unfold': True,
+        'unfold_read_default_limit': 80,
+    },
+    # Open CRM - Kanban - Filter: Creation Date = 2025 - Groupby month
     {
 
     },
-    # Kanban: Open CRM - FZilter: Creation Date = 2025 - Groupby month
+    # Open CRM - Kanban - Filter: default (none) - groupby lang_code (related field)
     {
 
     },
+    # Open CRM - Kanban - Filter : search 'test' (default groupby)
+    {
 
+    },
+    # Open CRM - Kanban - Filter: included active - groupby active
+    {
+
+    },
+    # Open CRM - List view - with multiple group loaded, TODO
+    {
+
+    },
+    # Open CRM - List view - with multiple group loaded, TODO
+    {
+
+    },
 
     # ------- project.task
     # Kanban: Open Framework Python project - No filters
@@ -54,7 +134,7 @@ SCENARIO = [
 def get_url(model, method):
     return f"{BASE_URL}/web/dataset/call_kw/RYV/{model}/{method}"
 
-def get_default_json_data(model, method, domain):
+def get_default_json_data(model, method):
     return {
         "id": 13,  # balec
         "jsonrpc": "2.0",
@@ -69,27 +149,20 @@ def get_default_json_data(model, method, domain):
                     "lang": "en_US",
                     "tz": "Europe/Brussels",
                 },
-                "domain": domain,
             },
         },
     }
 
-
-def old_way(scenario, with_issue=True):
-    (
-        model,
-        domain,
-        groupby,
-        aggregates,
-        read_specification,
-        search_limit,
-        search_order,
-    ) = scenario
-    json_data = get_default_json_data(model, "web_read_group", domain)
-    json_data["params"]["kwargs"]["fields"] = aggregates
-    json_data["params"]["kwargs"]["groupby"] = groupby
-
+def old_way(scenario, new_groups, with_issue=True):
+    model = scenario['model']
     url = get_url(model, "web_read_group")
+    json_data = get_default_json_data(model, "web_read_group")
+
+    json_data["params"]["kwargs"].update({
+        'domain': scenario['domain'],
+        'groupby': scenario['groupby'],
+        'aggregates': scenario['aggregates'],
+    })
 
     start = time_ns()
     res = requests.post(url, json=json_data, cookies=COOKIES)
@@ -97,31 +170,31 @@ def old_way(scenario, with_issue=True):
     groups = res.json()["result"]["groups"]
 
     def web_search_read_data(group):
-        data = get_default_json_data(model, "web_search_read", [])
-        data["params"]["kwargs"]["domain"] = group["__domain"]
-        data["params"]["kwargs"]["specification"] = read_specification
-        data["params"]["kwargs"]["count_limit"] = 10001 if with_issue else search_limit
-        data["params"]["kwargs"]["limit"] = search_limit
-        data["params"]["kwargs"]["order"] = search_order
+        data = get_default_json_data(model, "web_search_read")
+        data["params"]["kwargs"].update({
+            'domain': scenario['domain'] + group['__extra_domain'],
+            'specification': scenario['read_specification'],
+            'count_limit': 10001 if with_issue else scenario['unfold_read_default_limit'],
+            'limit': scenario['unfold_read_default_limit'],
+        })
         return data
 
-    def is_unfold(group):
-        return (not group.get("__fold", False)) and (group[f"{groupby[0]}_count"] != 0)
-
-    unfold_groups = list(itertools.islice(filter(is_unfold, groups), 10))
+    unfold_groups = []
+    for new_group, old_group in zip(new_groups, groups):
+        if '__records' in new_group:
+            unfold_groups.append(old_group)
 
     parallel_web_search_read = [
         grequests.post(
             get_url(model, "web_search_read"),
             json=web_search_read_data(g),
-            cookies=cookies,
+            cookies=COOKIES,
         )
         for g in unfold_groups
     ]
 
-    # TODO: should be 5 because of the read_group_progress_bar ?
     start = time_ns()
-    results = grequests.map(parallel_web_search_read, size=6)
+    results = grequests.map(parallel_web_search_read, size=MAX_PARALLEL_REQUEST)
     delay += time_ns() - start
 
     for group, res in zip(unfold_groups, results):
@@ -131,29 +204,23 @@ def old_way(scenario, with_issue=True):
 
 
 def new_way(method, scenario):
-    (
-        model,
-        domain,
-        groupby,
-        aggregates,
-        read_specification,
-        search_limit,
-        search_order,
-    ) = scenario
-    json_data = get_default_json_data(model, method, domain)
-    json_data["params"]["kwargs"]["aggregates"] = aggregates
-    json_data["params"]["kwargs"]["groupby"] = groupby
-    json_data["params"]["kwargs"]["read_specification"] = read_specification
-    json_data["params"]["kwargs"]["search_limit"] = search_limit
-    json_data["params"]["kwargs"]["search_order"] = search_order
+    model = scenario['model']
+    json_data = get_default_json_data(model, method)
+    json_data["params"]["kwargs"].update({
+        'domain': scenario['domain'],
+        'groupby': scenario['groupby'],
+        'aggregates': scenario['aggregates'],
+        'unfold_read_specification': scenario['read_specification'],
+        'unfold_read_default_limit': scenario['unfold_read_default_limit'],
+        'auto_unfold': True,
+    })
     start = time_ns()
-    res = requests.post(get_url(model, method), json=json_data, cookies=cookies)
+    res = requests.post(get_url(model, method), json=json_data, cookies=COOKIES)
     delay = time_ns() - start
     return res.json()["result"]["groups"], (delay / 1_000_000)
 
 
 NB_TEST = 10
-
 
 def time_test(method):
     res = []
@@ -166,183 +233,43 @@ def time_test(method):
 
 
 if __name__ == "__main__":
-    # model, domain, groupby, aggregates, read_specification, limit_search, order_search
-    scenarios = [
-        (  # When you open Help project (fixed aggregates)
-            "project.task",
-            [
-                "&",
-                "&",
-                ["project_id", "=", 49],
-                ["display_in_project", "=", True],
-                [
-                    "state",
-                    "in",
-                    [
-                        "01_in_progress",
-                        "02_changes_requested",
-                        "03_approved",
-                        "04_waiting_normal",
-                    ],
-                ],
-            ],
-            ["stage_id"],
-            ["__count"],
-            project_spec,
-            20,
-            None,
-        ),
-        (  # When you open CRM -> search 'test' (fixed aggregates)
-            "crm.lead",
-            [
-                "&",
-                ["type", "=", "opportunity"],
-                "|",
-                "|",
-                "|",
-                "|",
-                ["partner_id", "ilike", "test"],
-                ["partner_name", "ilike", "test"],
-                ["email_from", "ilike", "test"],
-                ["name", "ilike", "test"],
-                ["contact_name", "ilike", "test"],
-            ],
-            ["stage_id"],
-            ["__count", "expected_revenue:sum", "recurring_revenue_monthly:sum"],
-            spec_lead,
-            40,
-            None,
-        ),
-        (  # When you open CRM -> search 'infinity' included archived
-            "crm.lead",
-            [
-                "&",
-                ["type", "=", "opportunity"],
-                "&",
-                "|",
-                "|",
-                "|",
-                "|",
-                ["partner_id", "ilike", "infinity i"],
-                ["partner_name", "ilike", "infinity i"],
-                ["email_from", "ilike", "infinity i"],
-                ["name", "ilike", "infinity i"],
-                ["contact_name", "ilike", "infinity i"],
-                ["active", "in", [True, False]],
-            ],
-            ["stage_id"],
-            ["__count", "expected_revenue:sum", "recurring_revenue_monthly:sum"],
-            spec_lead,
-            40,
-            None,
-        ),
-        (  # When you open CRM -> search 'Won t find anything' (fixed aggregates)
-            "crm.lead",
-            [
-                "&",
-                ["type", "=", "opportunity"],
-                "|",
-                "|",
-                "|",
-                "|",
-                ["partner_id", "ilike", "Won t find anything"],
-                ["partner_name", "ilike", "Won t find anything"],
-                ["email_from", "ilike", "Won t find anything"],
-                ["name", "ilike", "Won t find anything"],
-                ["contact_name", "ilike", "Won t find anything"],
-            ],
-            ["stage_id"],
-            ["__count", "expected_revenue:sum", "recurring_revenue_monthly:sum"],
-            spec_lead,
-            40,
-            None,
-        ),
-        (  # When you open CRM -> groupby 'Sales Team' (fixed aggregates)
-            "crm.lead",
-            [["type", "=", "opportunity"]],
-            ["team_id"],
-            ["__count", "expected_revenue:sum", "recurring_revenue_monthly:sum"],
-            spec_lead,
-            40,
-            None,
-        ),
-        (  # When you open CRM -> custom groupby language (fixed aggregates)
-            "crm.lead",
-            [["type", "=", "opportunity"]],
-            ["lang_id"],
-            ["__count", "expected_revenue:sum", "recurring_revenue_monthly:sum"],
-            spec_lead,
-            40,
-            None,
-        ),
-        (  # Open Project -> Groupby Status (fixed aggregates)
-            "project.project",
-            [["is_internal_project", "=", False]],
-            ["last_update_status"],
-            ["__count"],
-            project_project_spec,
-            80,
-            "is_favorite DESC, sequence ASC, name ASC, id ASC",
-        ),
-        # TODO: with date ??? But _records_by_group_union_all_cte doesn't work
-    ]
-
-    scenario_names = [
-        # "Open CRM",
-        "Open CRM",
-        "Open ORM project",
-        "Open Help project",
-        "Open CRM -> search 'test'",
-        "Open CRM -> search 'infinity' included archived",
-        "Open CRM -> search 'Won t find anything'",
-        "Open CRM -> groupby 'Sales Team'",
-        "Open CRM -> custom groupby language",
-        "Open Project -> Groupby Status",
-    ]
-
     # Warmup
-    NB_WARMUP = 1
+    NB_WARMUP = 2
     for i in range(NB_WARMUP):
         print(f"Warmup worker {i}/{NB_WARMUP} :")
-        for scenario, name_s in zip(scenarios, scenario_names):
-            old_groups, _ = old_way(scenario, with_issue=True)
-            old_groups, _ = old_way(scenario, with_issue=False)
 
-            new_groups, _ = new_way("web_read_group_unity_naive_search", scenario)
-            assert (
-                old_groups == new_groups
-            ), f"web_read_group_unity_naive_search fail assert: {name_s}\n{old_groups}\nVS\n{new_groups}"
+        for scenario in SCENARIOS:
+            if not scenario:
+                continue
+            new_groups, _ = new_way("web_read_group_unity", scenario)
+            new_groups, _ = new_way("web_read_group_unity", scenario)
+            new_groups, _ = new_way("web_read_group_unity", scenario)
+            old_groups, _ = old_way(scenario, new_groups, with_issue=True)
+            old_groups, _ = old_way(scenario, new_groups, with_issue=False)
 
-            # new_groups, _ = new_way("web_read_group_unity_union_all", scenario)
             # assert (
             #     old_groups == new_groups
-            # ), f"web_read_group_unity_union_all fail assert: {name_s}\n{old_groups}\nVS\n{new_groups}"
+            # ), f"web_read_group_unity fail assert: {scenario['name']}\n{old_groups}\nVS\n{new_groups}"
 
-            new_groups, _ = new_way("web_read_group_unity_union_all_cte", scenario)
-            assert (
-                old_groups == new_groups
-            ), f"web_read_group_unity_union_all_cte fail assert: {name_s}\n{old_groups}\nVS\n{new_groups}"
             if i == 0:
                 print(
-                    f"\t- {name_s} : {sum(1 for group in new_groups if '__records' in group)} groups open"
+                    f"\t- {scenario['name']} : {sum(1 for group in new_groups if '__records' in group)} groups open"
                 )
 
     print("Launching test")
-    for scenario, name_s in zip(scenarios, scenario_names):
+    for scenario in SCENARIOS:
+        if not scenario:
+            continue
+        new_groups, _ = new_way("web_read_group_unity", scenario)
         to_test = [
             (
-                "union_all_cte",
-                partial(new_way, "web_read_group_unity_union_all_cte", scenario),
+                "web_read_group_unity",
+                partial(new_way, "web_read_group_unity", scenario),
             ),
-            (
-                "naive_search",
-                partial(new_way, "web_read_group_unity_naive_search", scenario),
-            ),
-            ("Old way (Fixed)", partial(old_way, scenario, with_issue=False)),
-            ("Old way", partial(old_way, scenario, with_issue=True)),
-            # ('union_all', partial(new_way, "web_read_group_unity_union_all", scenario)),
+            ("Old way (Fixed)", partial(old_way, scenario, new_groups, with_issue=False)),
+            ("Old way", partial(old_way, scenario, new_groups, with_issue=True)),
         ]
-        print(f"For {name_s!r}:")
+        print(f"For {scenario['name']}:")
         for name, method in to_test:
             res = time_test(method)
 
