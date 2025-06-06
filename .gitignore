@@ -27,6 +27,7 @@
 !not_in_selection/*.py
 !not_in_selection/*.log
 !new_read_group/*.py
+!perf_unity/*.py
 !new_read_group/*.txt
 !expression_tests.sql
 !aggregate_perf.py
