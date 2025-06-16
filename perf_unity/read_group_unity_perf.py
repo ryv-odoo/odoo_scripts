@@ -96,9 +96,8 @@ MAX_PARALLEL_REQUEST = 6  # Max of chrome
 
 SCENARIOS = [
     # ------- crm.lead
-    # Open CRM - Kanban - Filter: default (none) - all open lead are loaded
     {
-        "name": "Open CRM - Kanban - Filter: default (none) - all open lead are loaded",
+        "name": "Open CRM - Filter: default (none) - Groupby stage_id (default)",
         "model": "crm.lead",
         "domain": [["type", "=", "opportunity"]],
         "groupby": ["stage_id"],
@@ -116,9 +115,8 @@ SCENARIOS = [
             "default_type": "opportunity",
         },
     },
-    # Open CRM - Kanban - Filter: Creation Date = 2025 - Groupby month
     {
-        "name": "Open CRM - Kanban - Filter: Creation Date = 2025 - Groupby month",
+        "name": "Open CRM - Filter: Creation Date = 2025 - Groupby create_date:month",
         "model": "crm.lead",
         "domain": [
             "&",
@@ -142,9 +140,8 @@ SCENARIOS = [
             "default_type": "opportunity",
         },
     },
-    # Open CRM - Kanban - Filter: default (none) - groupby lang_code (related field)
     {
-        "name": "Open CRM - Kanban - Filter: default (none) - groupby lang_code (related field)",
+        "name": "Open CRM - Filter: default (none) - Groupby lang_code (related field)",
         "model": "crm.lead",
         "domain": [["type", "=", "opportunity"]],
         "groupby": ["lang_code"],
@@ -162,9 +159,8 @@ SCENARIOS = [
             "default_type": "opportunity",
         },
     },
-    # Open CRM - Kanban - Filter : search 'test' (default groupby)
     {
-        "name": "Open CRM - Kanban - Filter : search 'test' (default groupby)",
+        "name": "Open CRM - Filter: search 'test' - Groupby stage_id (default)",
         "model": "crm.lead",
         "domain": [
             "&",
@@ -194,9 +190,8 @@ SCENARIOS = [
             "default_type": "opportunity",
         },
     },
-    # Open CRM - Kanban - Filter My Pipeline with VIDH as user
     {
-        "name": "Open CRM - Kanban - Filter My Pipeline with (VIDH) as user",
+        "name": "Open CRM - Filter: My Pipeline with (VIDH) as user - Groupby stage_id (default)",
         "model": "crm.lead",
         "domain": ["&", ["type", "=", "opportunity"], ["user_id", "=", 6474071]],
         "groupby": ["stage_id"],
@@ -215,9 +210,8 @@ SCENARIOS = [
         },
     },
     # ------- project.task
-    # Kanban: Open Framework Python project - No filters
     {
-        "name": "Open Framework Python project - No filters",
+        "name": "Open Project, Framework Python project - Default filter - Groupby stage_id (default)",
         "model": "project.task",
         "domain": [
             "&",
@@ -252,9 +246,8 @@ SCENARIOS = [
             "project_kanban": True,
         },
     },
-    # Kanban: Open Help project - No filter
     {
-        "name": "Kanban: Open Help project - No filter",
+        "name": "Open Project, Help project - Default filter - Groupby stage_id (default)",
         "model": "project.task",
         "domain": [
             "&",
@@ -289,9 +282,8 @@ SCENARIOS = [
             "project_kanban": True,
         },
     },
-    # Kanban: Open Help project - Search "bve)" on Assignees
     {
-        "name": "Kanban: Open Help project - Search 'bve)' on Assignees",
+        "name": "Open Project, Help project - Search 'bve)' on Assignees - Groupby stage_id (default)",
         "model": "project.task",
         "domain": [
             "&",
@@ -493,12 +485,12 @@ if __name__ == "__main__":
                 f"\tUni Trivial> User time: {delay_user:10.3f} ms | Worker time: {delay_worker:10.3f} ms"
             )
 
-            new_groups, [delay_user, delay_worker] = new_way(
-                "web_read_group_unity_union_all_simple", scenario
-            )
-            print(
-                f"\tUni Union All> User time: {delay_user:10.3f} ms | Worker time: {delay_worker:10.3f} ms"
-            )
+            # new_groups, [delay_user, delay_worker] = new_way(
+            #     "web_read_group_unity_union_all_simple", scenario
+            # )
+            # print(
+            #     f"\tUni Union All> User time: {delay_user:10.3f} ms | Worker time: {delay_worker:10.3f} ms"
+            # )
 
             # new_groups, [delay_user, delay_worker] = new_way(
             #     "web_read_group_unity_cte", scenario
@@ -522,10 +514,11 @@ if __name__ == "__main__":
             # assert (
             #     old_groups == new_groups
             # ), f"web_read_group_unity fail assert: {scenario['name']}\n{old_groups}\nVS\n{new_groups}"
-
+            nb_open_group = sum(1 for group in new_groups if '__records' in group and group['__records'])
+            nb_opened_records = sum(len(group['__records']) for group in new_groups if '__records' in group)
             if i == 0:
                 print(
-                    f"{scenario['name']} : {sum(1 for group in new_groups if '__records' in group)} groups open"
+                    f"{scenario['name']} : {nb_open_group} groups opened (with records) - {nb_opened_records} records opened"
                 )
 
     print("Launching test")
@@ -537,10 +530,10 @@ if __name__ == "__main__":
             ("Old", partial(old_way, scenario, new_groups, with_issue=True)),
             ("Old (Fixed)", partial(old_way, scenario, new_groups, with_issue=False)),
             ("Uni Trivial", partial(new_way, "web_read_group_unity_trivial", scenario)),
-            (
-                "Uni Union All",
-                partial(new_way, "web_read_group_unity_union_all_simple", scenario),
-            ),
+            # (
+            #     "Uni Union All",
+            #     partial(new_way, "web_read_group_unity_union_all_simple", scenario),
+            # ),
             # ("Uni CTE", partial(new_way, "web_read_group_unity_cte", scenario)),
         ]
         print(f"For {scenario['name']}:")
@@ -556,44 +549,76 @@ if __name__ == "__main__":
                 f"\t{name:<15}> User time: {avg_user_times:10.3f} +- {stdev_user_times:8.3f} ms | Worker time: {avg_worker_times:10.3f} +- {stdev_worker_times:8.3f} ms"
             )
 
-
-# For Open CRM - Kanban - Filter: default (none) - all open lead are loaded:
-#         Old            > User time:   2530.209 +-   12.000 ms | Worker time:   5010.181 +-   45.391 ms
-#         Old (Fixed)    > User time:   2266.833 +-   41.837 ms | Worker time:   3936.705 +-   25.431 ms
-#         Uni Trivial    > User time:   2060.021 +-   76.349 ms | Worker time:   2058.456 +-   76.340 ms
-#         Uni Union All  > User time:   2046.427 +-    3.459 ms | Worker time:   2043.932 +-    4.471 ms
-# For Open CRM - Kanban - Filter: Creation Date = 2025 - Groupby month:
-#         Old            > User time:   1557.907 +-   29.301 ms | Worker time:   4436.593 +-   58.773 ms
-#         Old (Fixed)    > User time:   1291.402 +-  126.249 ms | Worker time:   3221.706 +-  558.178 ms
-#         Uni Trivial    > User time:   1077.290 +-   19.584 ms | Worker time:   1075.670 +-   19.544 ms
-#         Uni Union All  > User time:   1062.081 +-   44.808 ms | Worker time:   1057.531 +-   47.361 ms
-# For Open CRM - Kanban - Filter: default (none) - groupby lang_code (related field):
-#         Old            > User time:   4148.675 +-   32.936 ms | Worker time:  11637.274 +-   48.319 ms
-#         Old (Fixed)    > User time:   3375.362 +-   22.794 ms | Worker time:   6154.320 +-   59.297 ms
-#         Uni Trivial    > User time:   4023.565 +-   43.378 ms | Worker time:   4004.749 +-   42.077 ms
-#         Uni Union All  > User time:   3960.726 +-   65.375 ms | Worker time:   3938.327 +-   65.874 ms
-# For Open CRM - Kanban - Filter : search 'test' (default groupby):
-#         Old            > User time:   5176.144 +-   41.047 ms | Worker time:  12321.979 +-   87.120 ms
-#         Old (Fixed)    > User time:   4380.720 +-   18.591 ms | Worker time:   7884.931 +-   52.821 ms
-#         Uni Trivial    > User time:   5924.002 +-   20.356 ms | Worker time:   5921.230 +-   20.979 ms
-#         Uni Union All  > User time:   6300.816 +-   43.286 ms | Worker time:   6297.560 +-   46.472 ms
-# For Open CRM - Kanban - Filter My Pipeline with (VIDH) as user:
-#         Old            > User time:    345.941 +-    6.772 ms | Worker time:   1367.914 +-   62.801 ms
-#         Old (Fixed)    > User time:    357.179 +-   12.521 ms | Worker time:   1437.534 +-   37.525 ms
-#         Uni Trivial    > User time:    203.310 +-    8.037 ms | Worker time:    202.200 +-    8.050 ms
-#         Uni Union All  > User time:    200.757 +-    2.924 ms | Worker time:    199.692 +-    2.918 ms
-# For Open Framework Python project - No filters:
-#         Old            > User time:    371.581 +-   13.179 ms | Worker time:   1009.312 +-   11.700 ms
-#         Old (Fixed)    > User time:    357.443 +-    9.444 ms | Worker time:    987.150 +-   26.122 ms
-#         Uni Trivial    > User time:    239.191 +-   22.793 ms | Worker time:    238.332 +-   22.827 ms
-#         Uni Union All  > User time:    243.072 +-   15.329 ms | Worker time:    242.177 +-   15.342 ms
-# For Kanban: Open Help project - No filter:
-#         Old            > User time:    550.676 +-   14.584 ms | Worker time:   1658.978 +-   18.790 ms
-#         Old (Fixed)    > User time:    538.790 +-   10.594 ms | Worker time:   1619.316 +-   25.288 ms
-#         Uni Trivial    > User time:    469.783 +-   13.833 ms | Worker time:    468.593 +-   14.000 ms
-#         Uni Union All  > User time:    473.537 +-   36.971 ms | Worker time:    472.327 +-   37.117 ms
-# For Kanban: Open Help project - Search 'bve)' on Assignees:
-#         Old            > User time:    427.892 +-   13.071 ms | Worker time:   1261.133 +-   30.862 ms
-#         Old (Fixed)    > User time:    437.571 +-    8.310 ms | Worker time:   1278.440 +-   19.966 ms
-#         Uni Trivial    > User time:    291.869 +-   13.975 ms | Worker time:    290.929 +-   14.002 ms
-#         Uni Union All  > User time:    280.689 +-   15.320 ms | Worker time:    279.755 +-   15.350 ms
+# Warmup Open CRM - Filter: default (none) - Groupby stage_id (default)
+#         Uni Trivial> User time:   2161.406 ms | Worker time:   2158.350 ms
+#         Old> User time:   2456.564 ms | Worker time:   5106.532 ms
+#         Old (Fixed)> User time:   2304.593 ms | Worker time:   4476.674 ms
+# Open CRM - Filter: default (none) - Groupby stage_id (default) : 10 groups opened (with records) - 325 records opened
+# Warmup Open CRM - Filter: Creation Date = 2025 - Groupby create_date:month
+#         Uni Trivial> User time:   1010.640 ms | Worker time:   1009.059 ms
+#         Old> User time:   1475.492 ms | Worker time:   4580.188 ms
+#         Old (Fixed)> User time:   1055.770 ms | Worker time:   2297.030 ms
+# Open CRM - Filter: Creation Date = 2025 - Groupby create_date:month : 6 groups opened (with records) - 240 records opened
+# Warmup Open CRM - Filter: default (none) - Groupby lang_code (related field)
+#         Uni Trivial> User time:   4150.679 ms | Worker time:   4123.514 ms
+#         Old> User time:   4075.101 ms | Worker time:  11277.912 ms
+#         Old (Fixed)> User time:   3428.199 ms | Worker time:   6380.961 ms
+# Open CRM - Filter: default (none) - Groupby lang_code (related field) : 10 groups opened (with records) - 361 records opened
+# Warmup Open CRM - Filter: search 'test' - Groupby stage_id (default)
+#         Uni Trivial> User time:   5948.272 ms | Worker time:   5946.725 ms
+#         Old> User time:   5052.318 ms | Worker time:  12245.318 ms
+#         Old (Fixed)> User time:   4426.610 ms | Worker time:   7881.384 ms
+# Open CRM - Filter: search 'test' - Groupby stage_id (default) : 8 groups opened (with records) - 243 records opened
+# Warmup Open CRM - Filter: My Pipeline with (VIDH) as user - Groupby stage_id (default)
+#         Uni Trivial> User time:    204.376 ms | Worker time:    203.395 ms
+#         Old> User time:    402.012 ms | Worker time:   1650.828 ms
+#         Old (Fixed)> User time:    395.693 ms | Worker time:   1558.870 ms
+# Open CRM - Filter: My Pipeline with (VIDH) as user - Groupby stage_id (default) : 6 groups opened (with records) - 134 records opened
+# Warmup Open Project, Framework Python project - Default filter - Groupby stage_id (default)
+#         Uni Trivial> User time:    279.400 ms | Worker time:    278.477 ms
+#         Old> User time:    399.884 ms | Worker time:   1026.289 ms
+#         Old (Fixed)> User time:    393.598 ms | Worker time:   1060.122 ms
+# Open Project, Framework Python project - Default filter - Groupby stage_id (default) : 4 groups opened (with records) - 48 records opened
+# Warmup Open Project, Help project - No filter - Groupby stage_id (default)
+#         Uni Trivial> User time:    507.647 ms | Worker time:    506.521 ms
+#         Old> User time:    594.415 ms | Worker time:   1744.452 ms
+#         Old (Fixed)> User time:    544.303 ms | Worker time:   1647.522 ms
+# Open Project, Help project - No filter - Groupby stage_id (default) : 5 groups opened (with records) - 100 records opened
+# Warmup Open Project, Help project - Search 'bve)' on Assignees - Groupby stage_id (default)
+#         Uni Trivial> User time:    314.923 ms | Worker time:    314.091 ms
+#         Old> User time:    480.343 ms | Worker time:   1328.946 ms
+#         Old (Fixed)> User time:    435.648 ms | Worker time:   1286.411 ms
+# Open Project, Help project - Search 'bve)' on Assignees - Groupby stage_id (default) : 3 groups opened (with records) - 4 records opened
+# Launching test
+# For Open CRM - Filter: default (none) - Groupby stage_id (default):
+#         Old            > User time:   2495.128 +-   57.020 ms | Worker time:   5071.780 +-   22.681 ms
+#         Old (Fixed)    > User time:   2257.154 +-   49.056 ms | Worker time:   3993.602 +-  125.464 ms
+#         Uni Trivial    > User time:   2109.417 +-   22.845 ms | Worker time:   2105.389 +-   26.134 ms
+# For Open CRM - Filter: Creation Date = 2025 - Groupby create_date:month:
+#         Old            > User time:   1489.222 +-   27.526 ms | Worker time:   4388.155 +-   47.539 ms
+#         Old (Fixed)    > User time:   1075.068 +-   31.726 ms | Worker time:   2298.392 +-   17.080 ms
+#         Uni Trivial    > User time:    990.718 +-   36.329 ms | Worker time:    989.092 +-   36.343 ms
+# For Open CRM - Filter: default (none) - Groupby lang_code (related field):
+#         Old            > User time:   4172.701 +-   15.953 ms | Worker time:  11317.637 +-   46.593 ms
+#         Old (Fixed)    > User time:   3414.296 +-   42.615 ms | Worker time:   6208.338 +-   56.249 ms
+#         Uni Trivial    > User time:   4062.431 +-   45.224 ms | Worker time:   4037.195 +-   48.154 ms
+# For Open CRM - Filter: search 'test' - Groupby stage_id (default):
+#         Old            > User time:   5059.894 +-   32.458 ms | Worker time:  12214.776 +-   66.766 ms
+#         Old (Fixed)    > User time:   4378.451 +-   18.623 ms | Worker time:   7843.374 +-   89.574 ms
+#         Uni Trivial    > User time:   5837.071 +-   13.466 ms | Worker time:   5833.765 +-   13.061 ms
+# For Open CRM - Filter: My Pipeline with (VIDH) as user - Groupby stage_id (default):
+#         Old            > User time:    354.559 +-   13.876 ms | Worker time:   1406.978 +-   50.031 ms
+#         Old (Fixed)    > User time:    376.677 +-    4.262 ms | Worker time:   1492.995 +-   30.313 ms
+#         Uni Trivial    > User time:    224.452 +-    5.006 ms | Worker time:    223.399 +-    5.009 ms
+# For Open Project, Framework Python project - Default filter - Groupby stage_id (default):
+#         Old            > User time:    370.968 +-    4.947 ms | Worker time:   1007.227 +-   24.079 ms
+#         Old (Fixed)    > User time:    374.651 +-    5.025 ms | Worker time:    991.994 +-   20.477 ms
+#         Uni Trivial    > User time:    271.404 +-   18.166 ms | Worker time:    270.508 +-   18.144 ms
+# For Open Project, Help project - No filter - Groupby stage_id (default):
+#         Old            > User time:    573.647 +-    3.087 ms | Worker time:   1693.442 +-   70.651 ms
+#         Old (Fixed)    > User time:    531.486 +-   20.436 ms | Worker time:   1569.463 +-   27.046 ms
+#         Uni Trivial    > User time:    506.271 +-    5.747 ms | Worker time:    505.207 +-    5.708 ms
+# For Open Project, Help project - Search 'bve)' on Assignees - Groupby stage_id (default):
+#         Old            > User time:    433.501 +-   15.176 ms | Worker time:   1280.144 +-    7.425 ms
+#         Old (Fixed)    > User time:    447.778 +-    5.673 ms | Worker time:   1283.168 +-    7.129 ms
+#         Uni Trivial    > User time:    312.172 +-    3.624 ms | Worker time:    311.323 +-    3.566 ms
