@@ -32,6 +32,7 @@
 !expression_tests.sql
 !aggregate_perf.py
 !test_ormcache_sequence.py
+!python_issue.py
 !expression_performance/**/*.py
 !expression_performance/**/*.csv
 
