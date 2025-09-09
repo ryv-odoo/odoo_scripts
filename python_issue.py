@@ -35,15 +35,43 @@ Leading into deadlock situation the serving Thread wait the `_started` to be set
 it will never be since the specific Thread is dead... Also if this dead Thread remains in
 the _limbo dictionary (small inconsistency since it will be return in case of threading.enumarate()).
 
-When the thread is killed inside before `_started.set()`, we always get this weird error message:
+When the thread is killed inside before `_started.set()`, we always get a weird error message:
 "Exception ignored in thread started by: <A method>"
 This comes from the `thread_run` (C code) calling `_PyErr_WriteUnraisableMsg`
-At first glance, it seems that the ignored Exception is a MemoryError that skip part of the `_bootstrap_inner` method
+At first glance, it seems that the ignored Exception is a MemoryError that happens before or that 
+the beginning of the `_bootstrap_inner` method (before `_started.set()` obviously).
+If we put sys.unraisablehook to get more information, it is always due to a MemoryError:
 
-What we tried:
+--- Unraisable Exception Caught ---
+Full Traceback:
+Traceback (most recent call last):
+  File "/home/odoo/Documents/Pythons/py12/lib/python3.12/threading.py", line 1062, in _bootstrap_inner
+  File "/home/odoo/Documents/Pythons/py12/lib/python3.12/threading.py", line 1051, in _set_tstate_lock
+    self._tstate_lock = _set_sentinel()
+                        ^^^^^^^^^^^^^^^
+RuntimeError: can't allocate lock
+------------------------------------
+Most of the case, Python cannot call the hook at all since it needs some memory to do so and then terminated
+with a error like this: Exception ignored in sys.unraisablehook: <function bulletproof_unraisable_hook at 0x7d87eff923e0>
+
+Note that we also get a traceback from inside _bootstrap_inner if the memory exaustion happens inside of it:
+Traceback (most recent call last):
+  File "/home/odoo/Documents/Pythons/py12/lib/python3.12/threading.py", line 1033, in _bootstrap
+    self._bootstrap_inner()
+  File "/home/odoo/Documents/Pythons/py12/lib/python3.12/threading.py", line 1080, in _bootstrap_inner
+    self._delete()
+  File "/home/odoo/Documents/Pythons/py12/lib/python3.12/threading.py", line 1112, in _delete
+    del _active[get_ident()]
+        ~~~~~~~^^^^^^^^^^^^^
+KeyError: 139703676303040
+=> Make sense since the thread isn't inside the active at this point.
+
+
+Other try:
 - Increasing the stack_size to force Python to only accept create new Thread when more
 memory is available on the stack. That's doesn't seems to work even with a hug number...
 Does this method even work ?? Signature is odd and the doc is incomplete ??
+=> Stack memory isn't the Problem. Heap memory is ...
 
 - Catch the MemoryError, to sleep + gc after in order to force free memory => doesn't work better
 
@@ -80,18 +108,29 @@ Deadlock traceback
 
 TODO:
 - Check inside the ignored Exception with a debugger C
-- Check works stack_size
-- 
 
 """
-threading.stack_size(33000)
+
+def unraisable_hook(unraisable):
+    # This part might fail under memory exhaustion
+    tb_str = "".join(traceback.format_exception(
+        unraisable.exc_type, unraisable.exc_value, unraisable.exc_traceback
+    ))
+    print(f"""
+--- Unraisable Exception Caught ---
+Object: {unraisable.object}
+Full Traceback:{tb_str}
+-----------------------------------""")
+
+# Set hook to have more detail
+sys.unraisablehook = unraisable_hook
+
+# Set limit to avoid crash my computer :D
+resource.setrlimit(resource.RLIMIT_AS, (1_000_000_000, 1_500_000_000))
 
 print("PID: ", os.getpid(), " Stack Size ", threading.stack_size())
-
 # print("Sleep 10 sec")
 # time.sleep(10)
-
-resource.setrlimit(resource.RLIMIT_AS, (1_000_000_000, 1_500_000_000))
 
 def memory_error():
     memory_issue_list = []
