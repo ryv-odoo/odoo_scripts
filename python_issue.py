@@ -23,8 +23,6 @@ make --quiet clean &&
 make --quiet -j 10
 """
 
-
-
 """
 Current explaination:
 
@@ -70,18 +68,18 @@ KeyError: 139703676303040
 Other try:
 - Increasing the stack_size to force Python to only accept create new Thread when more
 memory is available on the stack. That's doesn't seems to work even with a hug number...
-Does this method even work ?? Signature is odd and the doc is incomplete ??
+
 => Stack memory isn't the Problem. Heap memory is ...
 
 - Catch the MemoryError, to sleep + gc after in order to force free memory => doesn't work better
 
 - Biscept on stable version, but is is reproductible:
-    - Python 3.8.0b1: Reproductible but seems more rare?
-    - Our version 3.12.3: Reproductible
-    - Python 3.12.11+: Reproductible
-    - Python 3.13.7+: Reproductible
-    - Python 3.14.0rc2+: Reproductible
-    - Python main/3.15.0a0: Reproductible
+  - Python 3.8.0b1: Reproductible but seems more rare?
+  - Our version 3.12.3: Reproductible
+  - Python 3.12.11+: Reproductible
+  - Python 3.13.7+: Reproductible
+  - Python 3.14.0rc2+: Reproductible
+  - Python main/3.15.0a0: Reproductible
 
 - Find a magic solution to bypass `self._started.wait()`. The only 'working' solution is to add
 a timeout (1 sec) on it that recheck the status of the Thread. But is fragile, because a timeout
