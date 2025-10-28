@@ -2,32 +2,29 @@ import resource
 import threading
 import gc
 
-# Set limit to avoid crash my computer in worst case if my code is incorrect some how
-resource.setrlimit(resource.RLIMIT_AS, (100_000_000, 150_000_000))
-
 def handler():
     pass
 
 def serving():
-    hard_limit = 25_000_000  # This can be change depending of the Python version.
-    step_limit_reduction = 1000
-    for _ in range(100_000):
-        gc.collect(2)  # Force to have a more determist issue by getting back heap memory
+    # These should be tweak (depending of Python version + system)
+    HARD_LIMIT_START = 30_000_000
+    LIMIT_REDUCTION = 5_000
+
+    for _ in range(500_000):
+        gc.collect(2)  # Force getting back memory: seems to increase the determinism of the script
 
         # Limit the heap size available for this process
-        resource.setrlimit(resource.RLIMIT_DATA, (hard_limit, hard_limit))
+        resource.setrlimit(resource.RLIMIT_DATA, (HARD_LIMIT_START, HARD_LIMIT_START * 2))
         try:
-            t = threading.Thread(target=handler)
-            print(f'Start Thread: {t} - Heap size limit : {hard_limit}')
-            t.start()
-            t.join()
-            hard_limit -= step_limit_reduction
-        except RuntimeError as r:  # If we fail completly to start the new thread
-            print(f'RuntimeError {t} : {r}',)
+            handler_thread = threading.Thread(target=handler)
+            print(f'Start Thread: {handler_thread} - Heap size limit : {HARD_LIMIT_START}')
+            handler_thread.start()
+            handler_thread.join()
+            HARD_LIMIT_START -= LIMIT_REDUCTION
+        except RuntimeError as r:  # If Python refused to launch a new Thread
+            print(f'RuntimeError: {r} - Cannot start the thread at all => error not detected.')
             return
 
-print('Start Serving')
-serving_thread = threading.Thread(target=serving, daemon=True)
+serving_thread = threading.Thread(target=serving)
 serving_thread.start()
 serving_thread.join()
-

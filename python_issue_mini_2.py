@@ -8,14 +8,14 @@ resource.setrlimit(resource.RLIMIT_AS, (1_000_000_000, 1_500_000_000))
 def memory_error():
     memory_issue_list = []
     while True:
-        memory_issue_list.append("a" * 45000)
+        memory_issue_list.append("a" * 50_000)
 
 def handler():
     time.sleep(0.001)
     try:
         memory_error()
     except MemoryError:
-        print(f"MemoryError in {threading.current_thread()}")
+        print(f"MemoryError in {threading.current_thread()} - Stop")
 
 def serving():
     for _ in range(100):
@@ -23,8 +23,8 @@ def serving():
             t = threading.Thread(target=handler)
             print(f'Start Thread: {t}')
             t.start()
-        except RuntimeError:
-            print('RuntimeError', {t})
+        except RuntimeError as r:
+            print(f'RuntimeError: {r} - Cannot start the thread at all => error not detected.')
 
 print('Start Serving')
 serving_thread = threading.Thread(target=serving, daemon=True)
